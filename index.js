@@ -13,6 +13,8 @@ class CelestialBody {
     this.color = color;
     this.weight = radius * radius * Math.PI;
     this.elasticity = 0.8;
+    this.trajectory = [];
+    this.maxTrajectoryPoints = 10000;
   }
 
   draw() {
@@ -21,6 +23,33 @@ class CelestialBody {
     ctx.fillStyle = this.color;
     ctx.fill();
     ctx.closePath();
+    this.drawTrajectory();
+    this.updateTrajectory();
+  }
+
+  updateTrajectory() {
+    this.trajectory.push({ x: this.x, y: this.y });
+
+    if (this.trajectory.length > this.maxTrajectoryPoints) {
+      this.trajectory.shift();
+    }
+  }
+
+  drawTrajectory() {
+    ctx.setLineDash([6, 2]);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.beginPath();
+
+    this.trajectory.forEach((point, index) => {
+      if (index === 0) {
+        ctx.moveTo(point.x, point.y);
+      } else {
+        ctx.lineTo(point.x, point.y);
+      }
+    });
+
+    ctx.stroke();
+    ctx.setLineDash([]);
   }
 
   update() {
@@ -143,10 +172,10 @@ function endDragHandler(e) {
 
     if (lastPressedKey === 'p') {
       if(launchVelocity){
-        celestialBodies.push(new CelestialBody(5, endDrag.x, endDrag.y, -launchVelocityX, -launchVelocityY, 'white'));
+        celestialBodies.push(new CelestialBody(2, endDrag.x, endDrag.y, -launchVelocityX, -launchVelocityY, 'white'));
       }
       else{
-        celestialBodies.push(new CelestialBody(5, endDrag.x, endDrag.y, 0, 0, 'white'));
+        celestialBodies.push(new CelestialBody(2, endDrag.x, endDrag.y, 0, 0, 'white'));
       }
     } else if (lastPressedKey === 's') {
       if(launchVelocity){
