@@ -19,7 +19,7 @@ class CelestialBody {
 
   draw() {
     ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.arc(this.x - camera.x, this.y - camera.y, this.radius, 0, Math.PI * 2);
     ctx.fillStyle = this.color;
     ctx.fill();
     ctx.closePath();
@@ -39,29 +39,25 @@ class CelestialBody {
     ctx.setLineDash([6, 2]);
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.beginPath();
-
+  
     this.trajectory.forEach((point, index) => {
+      // Subtract camera position from trajectory points
+      const cameraAdjustedX = point.x - camera.x;
+      const cameraAdjustedY = point.y - camera.y;
+  
       if (index === 0) {
-        ctx.moveTo(point.x, point.y);
+        ctx.moveTo(cameraAdjustedX, cameraAdjustedY);
       } else {
-        ctx.lineTo(point.x, point.y);
+        ctx.lineTo(cameraAdjustedX, cameraAdjustedY);
       }
     });
-
+  
     ctx.stroke();
     ctx.setLineDash([]);
   }
+  
 
   update() {
-    // Check for collisions with the canvas boundaries
-    if (this.x + this.radius > canvas.width || this.x - this.radius < 0) {
-      this.dx = -this.dx;
-    }
-
-    if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
-      this.dy = -this.dy;
-    }
-
     // Update position based on velocity
     this.x += this.dx;
     this.y += this.dy;
@@ -133,16 +129,17 @@ document.addEventListener('keydown', function (event) {
 
 function startDragHandler(e) {
   e.preventDefault();
-  startDrag = { x: e.clientX, y: e.clientY };
+  startDrag = { x: e.clientX + camera.x, y: e.clientY + camera.y };
   canvas.addEventListener('mousemove', dragHandler);
   canvas.addEventListener('mouseup', endDragHandler);
 }
 
 function dragHandler(e) {
   e.preventDefault();
-  drawTrajectory(startDrag.x, startDrag.y, e.clientX, e.clientY);
-  endDrag = { x: e.clientX, y: e.clientY };
+  drawTrajectory(startDrag.x, startDrag.y, e.clientX + camera.x, e.clientY + camera.y);
+  endDrag = { x: e.clientX + camera.x, y: e.clientY + camera.y };
 }
+
 
 function drawTrajectory(startX, startY, endX, endY) {
   ctx.setLineDash([5, 5]);
@@ -172,10 +169,10 @@ function endDragHandler(e) {
 
     if (lastPressedKey === 'p') {
       if(launchVelocity){
-        celestialBodies.push(new CelestialBody(2, endDrag.x, endDrag.y, -launchVelocityX, -launchVelocityY, 'white'));
+        celestialBodies.push(new CelestialBody(4, endDrag.x, endDrag.y, -launchVelocityX, -launchVelocityY, 'white'));
       }
       else{
-        celestialBodies.push(new CelestialBody(2, endDrag.x, endDrag.y, 0, 0, 'white'));
+        celestialBodies.push(new CelestialBody(4, endDrag.x, endDrag.y, 0, 0, 'white'));
       }
     } else if (lastPressedKey === 's') {
       if(launchVelocity){
@@ -198,10 +195,39 @@ function endDragHandler(e) {
   }
 }
 
+const camera = {
+  x: 0,
+  y: 0
+};
+
+const keys = {
+  ArrowUp: false,
+  ArrowDown: false,
+  ArrowLeft: false,
+  ArrowRight: false
+};
+
+window.addEventListener('keydown', function(e) {
+  if (keys.hasOwnProperty(e.key)) {
+    keys[e.key] = true;
+  }
+});
+
+window.addEventListener('keyup', function(e) {
+  if (keys.hasOwnProperty(e.key)) {
+    keys[e.key] = false;
+  }
+});
 
 function draw() {
   ctx.fillStyle = 'black';
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const speed = 5; // adjust as needed
+  if (keys.ArrowUp) camera.y -= speed;
+  if (keys.ArrowDown) camera.y += speed;
+  if (keys.ArrowLeft) camera.x -= speed;
+  if (keys.ArrowRight) camera.x += speed;
 
   celestialBodies.forEach(body => {
     body.draw();
