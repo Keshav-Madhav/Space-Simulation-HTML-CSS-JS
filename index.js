@@ -12,7 +12,7 @@ class CelestialBody {
     this.dy = dy;
     this.color = color;
     this.weight = radius * radius * Math.PI;
-    this.elasticity = 1;
+    this.elasticity = 0.8;
   }
 
   draw() {
@@ -24,6 +24,7 @@ class CelestialBody {
   }
 
   update() {
+    // Check for collisions with the canvas boundaries
     if (this.x + this.radius > canvas.width || this.x - this.radius < 0) {
       this.dx = -this.dx;
     }
@@ -32,8 +33,51 @@ class CelestialBody {
       this.dy = -this.dy;
     }
 
+    // Update position based on velocity
     this.x += this.dx;
     this.y += this.dy;
+
+    // Update velocity based on gravitational forces
+    this.updateGravity(celestialBodies);
+
+    // Update velocity based on acceleration
+    this.dx += this.ax;
+    this.dy += this.ay;
+  }
+
+  calculateGravitationalForce(otherBody) {
+    const G = 0.1; // Gravitational constant (you can adjust this value)
+    
+    const dx = otherBody.x - this.x;
+    const dy = otherBody.y - this.y;
+    const distanceSquared = dx * dx + dy * dy;
+    const distance = Math.sqrt(distanceSquared);
+
+    // Avoid division by zero and very close interactions
+    if (distance < 1) return { fx: 0, fy: 0 };
+
+    const force = (G * this.weight * otherBody.weight) / distanceSquared;
+
+    // Calculate acceleration components
+    const accelerationX = force * (dx / distance) / this.weight;
+    const accelerationY = force * (dy / distance) / this.weight;
+
+    return { ax: accelerationX, ay: accelerationY };
+  }
+
+  updateGravity(celestialBodies) {
+    // Reset acceleration
+    this.ax = 0;
+    this.ay = 0;
+
+    // Calculate gravitational forces from other celestial bodies
+    celestialBodies.forEach((body) => {
+      if (body !== this) {
+        const { ax, ay } = this.calculateGravitationalForce(body);
+        this.ax += ax;
+        this.ay += ay;
+      }
+    });
   }
 }
 
@@ -99,17 +143,17 @@ function endDragHandler(e) {
 
     if (lastPressedKey === 'p') {
       if(launchVelocity){
-        celestialBodies.push(new CelestialBody(10, endDrag.x, endDrag.y, -launchVelocityX, -launchVelocityY, 'white'));
+        celestialBodies.push(new CelestialBody(5, endDrag.x, endDrag.y, -launchVelocityX, -launchVelocityY, 'white'));
       }
       else{
-        celestialBodies.push(new CelestialBody(10, endDrag.x, endDrag.y, 0, 0, 'white'));
+        celestialBodies.push(new CelestialBody(5, endDrag.x, endDrag.y, 0, 0, 'white'));
       }
     } else if (lastPressedKey === 's') {
       if(launchVelocity){
-        celestialBodies.push(new CelestialBody(40, endDrag.x, endDrag.y, -launchVelocityX, -launchVelocityY, 'orange'));
+        celestialBodies.push(new CelestialBody(50, endDrag.x, endDrag.y, -launchVelocityX, -launchVelocityY, 'orange'));
       }
       else{
-        celestialBodies.push(new CelestialBody(40, endDrag.x, endDrag.y, 0, 0, 'orange'));
+        celestialBodies.push(new CelestialBody(50, endDrag.x, endDrag.y, 0, 0, 'orange'));
       }
     }
 
