@@ -4,19 +4,22 @@ const ctx = canvas.getContext('2d');
 const celestialBodies = [];
 
 class CelestialBody {
-  constructor(radius, x, y, dx, dy, color) {
+  constructor(radius, x, y, dx, dy, color, label) {
     this.radius = radius;
     this.x = x;
     this.y = y;
     this.dx = dx;
     this.dy = dy;
-    this.color = color;
+    this.color = `rgba(${color.r}, ${color.g}, ${color.b}, 1)`;
+    this.trailColor = `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`;
     this.weight = radius * radius * Math.PI;
     this.elasticity = 0.8;
     this.trajectory = [];
-    this.maxTrajectoryPoints = 10000;
+    this.maxTrajectoryPoints = 100000;
+    this.label = label;
+    this.prevX = x;
+    this.prevY = y;
   }
-
   draw() {
     ctx.beginPath();
     ctx.arc(this.x - camera.x, this.y - camera.y, this.radius, 0, Math.PI * 2);
@@ -25,6 +28,28 @@ class CelestialBody {
     ctx.closePath();
     this.drawTrajectory();
     this.updateTrajectory();
+
+    ctx.fillStyle = this.color;
+    // ctx.font = `${Math.round(this.radius / 2)}px Arial`;
+    ctx.font = `20px Arial`;
+    const textWidth = ctx.measureText(this.label).width;
+    ctx.fillText(this.label, this.x - camera.x - textWidth / 2, this.y - camera.y + this.radius + 22);
+
+    // Calculate magnitude of velocity
+    const displacementX = this.x - this.prevX;
+    const displacementY = this.y - this.prevY;
+    const velocityMagnitude = Math.sqrt(displacementX ** 2 + displacementY ** 2);
+    const velocityText = `${velocityMagnitude.toFixed(2)}m/s`;
+    
+    // Display the magnitude of velocity
+    const velocityTextWidth = ctx.measureText(velocityText).width;
+    ctx.font = `14px Arial`;
+    ctx.fillStyle = 'white';
+    ctx.fillText(velocityText, this.x - camera.x - velocityTextWidth / 2, this.y - camera.y - this.radius - 10);
+
+    // Update previous position for the next frame
+    this.prevX = this.x;
+    this.prevY = this.y;
   }
 
   updateTrajectory() {
@@ -37,11 +62,10 @@ class CelestialBody {
 
   drawTrajectory() {
     ctx.setLineDash([6, 2]);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.strokeStyle = this.trailColor;
     ctx.beginPath();
   
     this.trajectory.forEach((point, index) => {
-      // Subtract camera position from trajectory points
       const cameraAdjustedX = point.x - camera.x;
       const cameraAdjustedY = point.y - camera.y;
   
@@ -110,7 +134,7 @@ let lastPressedKey = null;
 let startDrag = null;
 var endDrag = null;
 let cameraFollowingIndex = 0;
-let cameraFollow = true;
+let cameraFollow = false;
 
 //resize canvas
 window.addEventListener('resize', resizeCanvas);
@@ -189,17 +213,17 @@ function endDragHandler(e) {
 
     if (lastPressedKey === 'p') {
       if(launchVelocity){
-        celestialBodies.push(new CelestialBody(4, endDrag.x, endDrag.y, -launchVelocityX, -launchVelocityY, 'white'));
+        celestialBodies.push(new CelestialBody(8, endDrag.x, endDrag.y, -launchVelocityX, -launchVelocityY, { r: 255, g: 255, b: 255 }, 'Planet ' + (celestialBodies.length + 1)));
       }
       else{
-        celestialBodies.push(new CelestialBody(4, endDrag.x, endDrag.y, 0, 0, 'white'));
+        celestialBodies.push(new CelestialBody(8, endDrag.x, endDrag.y, 0, 0, { r: 255, g: 255, b: 255 }, 'Planet ' + (celestialBodies.length + 1)));
       }
     } else if (lastPressedKey === 's') {
       if(launchVelocity){
-        celestialBodies.push(new CelestialBody(50, endDrag.x, endDrag.y, -launchVelocityX, -launchVelocityY, 'orange'));
+        celestialBodies.push(new CelestialBody(70, endDrag.x, endDrag.y, -launchVelocityX, -launchVelocityY, { r: 255, g: 165, b: 0 }, 'Star ' + (celestialBodies.length + 1)));
       }
       else{
-        celestialBodies.push(new CelestialBody(50, endDrag.x, endDrag.y, 0, 0, 'orange'));
+        celestialBodies.push(new CelestialBody(70, endDrag.x, endDrag.y, 0, 0, { r: 255, g: 165, b: 0 }, 'Star ' + (celestialBodies.length + 1)));
       }
     }
 
