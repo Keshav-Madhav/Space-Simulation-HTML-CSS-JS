@@ -109,6 +109,8 @@ class CelestialBody {
 let lastPressedKey = null;
 let startDrag = null;
 var endDrag = null;
+let cameraFollowingIndex = 0;
+let cameraFollow = true;
 
 //resize canvas
 window.addEventListener('resize', resizeCanvas);
@@ -124,6 +126,24 @@ document.addEventListener('keydown', function (event) {
     startDrag = null;
     endDrag = null;
     canvas.addEventListener('mousedown', startDragHandler);
+  }
+
+  // Handle cycling through celestial bodies using 'n' and 'm'
+  if (event.key === 'n' || event.key === 'm') {
+    const direction = event.key === 'n' ? 1 : -1;
+    cameraFollowingIndex = (cameraFollowingIndex + direction + celestialBodies.length) % celestialBodies.length;
+  }
+
+  // Handle following celestial bodies using numbers '0' to '9'
+  if (event.key >= '0' && event.key <= '9') {
+    const index = parseInt(event.key);
+    if (index < celestialBodies.length) {
+      cameraFollowingIndex = index;
+    }
+  }
+
+  if (event.key === 'c') {
+    cameraFollow = !cameraFollow;
   }
 });
 
@@ -228,6 +248,12 @@ function draw() {
   if (keys.ArrowDown) camera.y += speed;
   if (keys.ArrowLeft) camera.x -= speed;
   if (keys.ArrowRight) camera.x += speed;
+
+  if (celestialBodies.length > 0 && cameraFollowingIndex < celestialBodies.length && cameraFollow) {
+    const followedBody = celestialBodies[cameraFollowingIndex];
+    camera.x = followedBody.x - canvas.width / 2;
+    camera.y = followedBody.y - canvas.height / 2;
+  }
 
   celestialBodies.forEach(body => {
     body.draw();
