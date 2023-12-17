@@ -1,7 +1,38 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
+const canvas2 = document.getElementById('canvas2');
+const ctx2 = canvas.getContext('2d');
+
+let lastPressedKey = null;
+let startDrag = null;
+var endDrag = null;
+let cameraFollowingIndex = 0;
+let cameraFollow = false;
+
+//resize canvas
+window.addEventListener('resize', resizeCanvas);
+function resizeCanvas() {
+  canvas.width = window.innerWidth - 10;
+  canvas.height = window.innerHeight - 5;
+  canvas2.width = window.innerWidth - 10;
+  canvas2.height = window.innerHeight - 5;
+}
+resizeCanvas();
+
 const celestialBodies = [];
+
+const camera = {
+  x: 0,
+  y: 0
+};
+
+const keys = {
+  ArrowUp: false,
+  ArrowDown: false,
+  ArrowLeft: false,
+  ArrowRight: false
+};
 
 class CelestialBody {
   constructor(radius, x, y, dx, dy, color, label) {
@@ -130,66 +161,67 @@ class CelestialBody {
   }
 }
 
-// class BackgroundStar {
-//   constructor() {
-//     this.x = Math.random() * window.innerWidth;
-//     this.y = Math.random() * window.innerHeight;
-//     this.z = Math.random() * 10 + 1;
-//     this.opacity = Math.random() * 0.5;
-//     this.speed = Math.random() * 2 + 0.5;
-//   }
+class BackgroundStar {
+  constructor() {
+    this.x = Math.random() * window.innerWidth;
+    this.y = Math.random() * window.innerHeight;
+    this.z = Math.random() * 10 + 1;
+    this.opacity = Math.random() * 0.5;
+    this.speed = Math.random() * 2 + 0.5;
+  }
 
-//   draw() {
-//     let adjustedX = this.x - (camera.x / this.z);
-//     let adjustedY = this.y - (camera.y / this.z);
-  
-//     if (adjustedX < 0 || adjustedX > window.innerWidth || adjustedY < 0 || adjustedY > window.innerHeight) {
-//       // Respawn the star at the top of the screen
-//       this.x = Math.random() * window.innerWidth;
-//       this.y = 0;
-//       this.z = Math.random() * 10 + 1;
-//       this.opacity = Math.random() * 0.5;
-//       this.speed = Math.random() * 2 + 0.5;
-//     }
-  
-//     // Rest of the code remains unchanged
-//     ctx.beginPath();
-//     ctx.arc(adjustedX, adjustedY, this.z, 0, Math.PI * 2);
-//     ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
-//     ctx.fill();
-//     ctx.closePath();
-//   }  
-// }
+  draw() {
+    let adjustedX = this.x - (camera.x / (this.z*4));
+    let adjustedY = this.y - (camera.y / (this.z*4));
 
-// const backgroundStars = [];
+    if (adjustedX < 0) {
+      adjustedX = window.innerWidth;
+      this.x = adjustedX + (camera.x / (this.z*4));
+    }
+    if (adjustedX > window.innerWidth) {
+      adjustedX = 0;
+      this.x = adjustedX + (camera.x / (this.z*4));
+    }
+    if (adjustedY < 0) {
+      adjustedY = window.innerHeight;
+      this.y = adjustedY + (camera.y / (this.z*4));
+    }
+    if (adjustedY > window.innerHeight) {
+      adjustedY = 0;
+      this.y = adjustedY + (camera.y / (this.z*4));
+    }
 
-// function createBackgroundStars(numStars) {
-//   for (let i = 0; i < numStars; i++) {
-//     backgroundStars.push(new BackgroundStar());
-//   }
-// }
+    ctx2.beginPath();
+    ctx2.arc(adjustedX, adjustedY, this.z/5, 0, Math.PI * 2);
+    ctx2.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+    ctx2.fill();
+    ctx2.closePath();
+  }
 
-// createBackgroundStars(1000); // Adjust the number of stars as needed
-
-// function drawBackgroundStars() {
-//   backgroundStars.forEach(star => {
-//     star.draw();
-//   });
-// }
-
-let lastPressedKey = null;
-let startDrag = null;
-var endDrag = null;
-let cameraFollowingIndex = 0;
-let cameraFollow = false;
-
-//resize canvas
-window.addEventListener('resize', resizeCanvas);
-function resizeCanvas() {
-  canvas.width = window.innerWidth - 10;
-  canvas.height = window.innerHeight - 5;
+  randomize() {
+    this.x = Math.random() * window.innerWidth;
+    this.y = Math.random() * window.innerHeight;
+    this.z = Math.random() * 10 + 1;
+    this.opacity = Math.random() * 0.5;
+    this.speed = Math.random() * 2 + 0.5;
+  }
 }
-resizeCanvas();
+
+let backgroundStars = [];
+
+function createBackgroundStars(numStars) {
+  for (let i = 0; i < numStars; i++) {
+    backgroundStars.push(new BackgroundStar());
+  }
+}
+
+createBackgroundStars(1000); // Adjust the number of stars as needed
+
+function drawBackgroundStars() {
+  backgroundStars.forEach(star => {
+    star.draw();
+  });
+}
 
 document.addEventListener('keydown', function (event) {
   if (event.key === 'p' || event.key === 's') {
@@ -289,18 +321,6 @@ function endDragHandler(e) {
   }
 }
 
-const camera = {
-  x: 0,
-  y: 0
-};
-
-const keys = {
-  ArrowUp: false,
-  ArrowDown: false,
-  ArrowLeft: false,
-  ArrowRight: false
-};
-
 window.addEventListener('keydown', function(e) {
   if (keys.hasOwnProperty(e.key)) {
     keys[e.key] = true;
@@ -333,7 +353,7 @@ function draw() {
     camera.y = followedBody.y - canvas.height / 2;
   }
 
-  // drawBackgroundStars();
+  drawBackgroundStars();
 
   celestialBodies.forEach(body => {
     body.draw();
