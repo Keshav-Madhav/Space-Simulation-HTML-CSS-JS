@@ -13,7 +13,7 @@ class CelestialBody {
     this.color = `rgba(${color.r}, ${color.g}, ${color.b}, 1)`;
     this.trailColor = `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`;
     this.weight = radius * radius * Math.PI;
-    this.elasticity = 0.8;
+    this.elasticity = 0.6;
     this.trajectory = [];
     this.maxTrajectoryPoints = 100000;
     this.label = label;
@@ -39,7 +39,7 @@ class CelestialBody {
     const displacementX = this.x - this.prevX;
     const displacementY = this.y - this.prevY;
     const velocityMagnitude = Math.sqrt(displacementX ** 2 + displacementY ** 2);
-    const velocityText = `${velocityMagnitude.toFixed(2)}m/s`;
+    const velocityText = `${(velocityMagnitude*10).toFixed(2)}km/s`;
     
     // Display the magnitude of velocity
     const velocityTextWidth = ctx.measureText(velocityText).width;
@@ -130,6 +130,53 @@ class CelestialBody {
   }
 }
 
+// class BackgroundStar {
+//   constructor() {
+//     this.x = Math.random() * window.innerWidth;
+//     this.y = Math.random() * window.innerHeight;
+//     this.z = Math.random() * 10 + 1;
+//     this.opacity = Math.random() * 0.5;
+//     this.speed = Math.random() * 2 + 0.5;
+//   }
+
+//   draw() {
+//     let adjustedX = this.x - (camera.x / this.z);
+//     let adjustedY = this.y - (camera.y / this.z);
+  
+//     if (adjustedX < 0 || adjustedX > window.innerWidth || adjustedY < 0 || adjustedY > window.innerHeight) {
+//       // Respawn the star at the top of the screen
+//       this.x = Math.random() * window.innerWidth;
+//       this.y = 0;
+//       this.z = Math.random() * 10 + 1;
+//       this.opacity = Math.random() * 0.5;
+//       this.speed = Math.random() * 2 + 0.5;
+//     }
+  
+//     // Rest of the code remains unchanged
+//     ctx.beginPath();
+//     ctx.arc(adjustedX, adjustedY, this.z, 0, Math.PI * 2);
+//     ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+//     ctx.fill();
+//     ctx.closePath();
+//   }  
+// }
+
+// const backgroundStars = [];
+
+// function createBackgroundStars(numStars) {
+//   for (let i = 0; i < numStars; i++) {
+//     backgroundStars.push(new BackgroundStar());
+//   }
+// }
+
+// createBackgroundStars(1000); // Adjust the number of stars as needed
+
+// function drawBackgroundStars() {
+//   backgroundStars.forEach(star => {
+//     star.draw();
+//   });
+// }
+
 let lastPressedKey = null;
 let startDrag = null;
 var endDrag = null;
@@ -178,6 +225,21 @@ function startDragHandler(e) {
   canvas.addEventListener('mouseup', endDragHandler);
 }
 
+function drawTrajectory(startX, startY, endX, endY) {
+  const cameraAdjustedStartX = startX - camera.x;
+  const cameraAdjustedStartY = startY - camera.y;
+  const cameraAdjustedEndX = endX - camera.x;
+  const cameraAdjustedEndY = endY - camera.y;
+
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(cameraAdjustedStartX, cameraAdjustedStartY);
+  ctx.lineTo(cameraAdjustedEndX, cameraAdjustedEndY);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
 function dragHandler(e) {
   e.preventDefault();
   drawTrajectory(startDrag.x, startDrag.y, e.clientX + camera.x, e.clientY + camera.y);
@@ -185,22 +247,10 @@ function dragHandler(e) {
 }
 
 
-function drawTrajectory(startX, startY, endX, endY) {
-  ctx.setLineDash([5, 5]);
-  ctx.beginPath();
-  ctx.moveTo(startX, startY);
-  ctx.lineTo(endX, endY);
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-  ctx.stroke();
-  ctx.setLineDash([]);
-}
-
 function endDragHandler(e) {
   e.preventDefault();
   if (startDrag) {
-    if (endDrag === null) { // Check if endDrag is not set
-      endDrag = { x: e.clientX, y: e.clientY };
-    }
+    endDrag = { x: e.clientX + camera.x, y: e.clientY + camera.y };
     
     const dx = endDrag.x - startDrag.x;
     const dy = endDrag.y - startDrag.y;
@@ -255,7 +305,11 @@ window.addEventListener('keydown', function(e) {
   if (keys.hasOwnProperty(e.key)) {
     keys[e.key] = true;
   }
-});
+  if (e.key === ' '){
+    camera.x = 0;
+    camera.y = 0;
+  }
+}); 
 
 window.addEventListener('keyup', function(e) {
   if (keys.hasOwnProperty(e.key)) {
@@ -278,6 +332,8 @@ function draw() {
     camera.x = followedBody.x - canvas.width / 2;
     camera.y = followedBody.y - canvas.height / 2;
   }
+
+  // drawBackgroundStars();
 
   celestialBodies.forEach(body => {
     body.draw();
