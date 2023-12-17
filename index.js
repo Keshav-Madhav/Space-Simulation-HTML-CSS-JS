@@ -2,7 +2,7 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
 const canvas2 = document.getElementById('canvas2');
-const ctx2 = canvas.getContext('2d');
+const ctx2 = canvas2.getContext('2d');
 
 let lastPressedKey = null;
 let startDrag = null;
@@ -24,7 +24,9 @@ const celestialBodies = [];
 
 const camera = {
   x: 0,
-  y: 0
+  y: 0,
+  prevX: 0,
+  prevY: 0
 };
 
 const keys = {
@@ -35,53 +37,64 @@ const keys = {
 };
 
 class CelestialBody {
-  constructor(radius, x, y, dx, dy, color, label) {
+  constructor(bodyType, radius, x, y, dx, dy, color, label, weight, trailColor, textColor) {
+    this.bodyType = bodyType;
     this.radius = radius;
     this.x = x;
     this.y = y;
     this.dx = dx;
     this.dy = dy;
     this.color = `rgba(${color.r}, ${color.g}, ${color.b}, 1)`;
-    this.trailColor = `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`;
-    this.weight = radius * radius * Math.PI;
+    this.trailColor = trailColor || `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`;
+    this.textColor = textColor || `rgba(${color.r}, ${color.g}, ${color.b}, 0.9)`
+    this.weight = weight || radius * radius * Math.PI;
     this.elasticity = 0.6;
     this.trajectory = [];
-    this.maxTrajectoryPoints = 100000;
+    this.maxTrajectoryPoints = 30000;
     this.label = label;
     this.prevX = x;
     this.prevY = y;
   }
+
   draw() {
     ctx.beginPath();
     ctx.arc(this.x - camera.x, this.y - camera.y, this.radius, 0, Math.PI * 2);
     ctx.fillStyle = this.color;
     ctx.fill();
+    
+    // Draw a stroke around the black hole
+    if (this.color === 'rgba(0, 0, 0, 1)') {
+      ctx.strokeStyle = this.trailColor;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  
     ctx.closePath();
     this.drawTrajectory();
     this.updateTrajectory();
-
-    ctx.fillStyle = this.color;
-    // ctx.font = `${Math.round(this.radius / 2)}px Arial`;
+  
+    ctx.fillStyle = this.textColor;
     ctx.font = `20px Arial`;
     const textWidth = ctx.measureText(this.label).width;
     ctx.fillText(this.label, this.x - camera.x - textWidth / 2, this.y - camera.y + this.radius + 22);
-
+  
     // Calculate magnitude of velocity
     const displacementX = this.x - this.prevX;
     const displacementY = this.y - this.prevY;
     const velocityMagnitude = Math.sqrt(displacementX ** 2 + displacementY ** 2);
-    const velocityText = `${(velocityMagnitude*10).toFixed(2)}km/s`;
-    
+    const velocityText = `${(velocityMagnitude * 10).toFixed(2)}km/s`;
+  
     // Display the magnitude of velocity
     const velocityTextWidth = ctx.measureText(velocityText).width;
     ctx.font = `14px Arial`;
-    ctx.fillStyle = 'white';
+    ctx.fillStyle = this.textColor;
     ctx.fillText(velocityText, this.x - camera.x - velocityTextWidth / 2, this.y - camera.y - this.radius - 10);
-
+  
     // Update previous position for the next frame
     this.prevX = this.x;
     this.prevY = this.y;
   }
+  
 
   updateTrajectory() {
     this.trajectory.push({ x: this.x, y: this.y });
@@ -92,25 +105,26 @@ class CelestialBody {
   }
 
   drawTrajectory() {
-    ctx.setLineDash([6, 2]);
-    ctx.strokeStyle = this.trailColor;
-    ctx.beginPath();
+    if (this.dx !== 0 || this.dy !== 0) {
+      ctx.setLineDash([6, 2]);
+      ctx.strokeStyle = this.trailColor;
+      ctx.beginPath();
   
-    this.trajectory.forEach((point, index) => {
-      const cameraAdjustedX = point.x - camera.x;
-      const cameraAdjustedY = point.y - camera.y;
+      this.trajectory.forEach((point, index) => {
+        const cameraAdjustedX = point.x - camera.x;
+        const cameraAdjustedY = point.y - camera.y;
   
-      if (index === 0) {
-        ctx.moveTo(cameraAdjustedX, cameraAdjustedY);
-      } else {
-        ctx.lineTo(cameraAdjustedX, cameraAdjustedY);
-      }
-    });
+        if (index === 0) {
+          ctx.moveTo(cameraAdjustedX, cameraAdjustedY);
+        } else {
+          ctx.lineTo(cameraAdjustedX, cameraAdjustedY);
+        }
+      });
   
-    ctx.stroke();
-    ctx.setLineDash([]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
   }
-  
 
   update() {
     // Update position based on velocity
@@ -192,22 +206,14 @@ class BackgroundStar {
     }
 
     ctx2.beginPath();
-    ctx2.arc(adjustedX, adjustedY, this.z/5, 0, Math.PI * 2);
+    ctx2.arc(adjustedX, adjustedY, this.z/3, 0, Math.PI * 2);
     ctx2.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
     ctx2.fill();
     ctx2.closePath();
   }
-
-  randomize() {
-    this.x = Math.random() * window.innerWidth;
-    this.y = Math.random() * window.innerHeight;
-    this.z = Math.random() * 10 + 1;
-    this.opacity = Math.random() * 0.5;
-    this.speed = Math.random() * 2 + 0.5;
-  }
 }
 
-let backgroundStars = [];
+const backgroundStars = [];
 
 function createBackgroundStars(numStars) {
   for (let i = 0; i < numStars; i++) {
@@ -215,16 +221,18 @@ function createBackgroundStars(numStars) {
   }
 }
 
-createBackgroundStars(1000); // Adjust the number of stars as needed
+createBackgroundStars(1500);
 
+// Modify the drawBackgroundStars function to apply distortion
 function drawBackgroundStars() {
   backgroundStars.forEach(star => {
     star.draw();
   });
 }
+drawBackgroundStars();
 
 document.addEventListener('keydown', function (event) {
-  if (event.key === 'p' || event.key === 's') {
+  if (event.key === 'p' || event.key === 's' || event.key === 'b') {
     lastPressedKey = event.key;
     startDrag = null;
     endDrag = null;
@@ -247,6 +255,11 @@ document.addEventListener('keydown', function (event) {
 
   if (event.key === 'c') {
     cameraFollow = !cameraFollow;
+  }
+
+  if (event.key === 'r') {
+    celestialBodies.length = 0; // Clear the array
+    console.log('All celestial bodies removed.');
   }
 });
 
@@ -283,30 +296,64 @@ function endDragHandler(e) {
   e.preventDefault();
   if (startDrag) {
     endDrag = { x: e.clientX + camera.x, y: e.clientY + camera.y };
-    
+
     const dx = endDrag.x - startDrag.x;
     const dy = endDrag.y - startDrag.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    console.log(distance);
 
-    const launchVelocity = 0.05 * distance;
-    const launchVelocityX = dx / distance * launchVelocity; // Corrected calculation
-    const launchVelocityY = dy / distance * launchVelocity; // Corrected calculation
+    const maxSpeed = 20;
+    const launchSpeed = Math.min(0.05 * distance, maxSpeed);
+
+    let launchVelocityX = 0;
+    let launchVelocityY = 0;
+
+    if (launchSpeed > 0 ){
+      launchVelocityX = (dx / distance) * launchSpeed;
+      launchVelocityY = (dy / distance) * launchSpeed;
+    }
 
     if (lastPressedKey === 'p') {
-      if(launchVelocity){
-        celestialBodies.push(new CelestialBody(8, endDrag.x, endDrag.y, -launchVelocityX, -launchVelocityY, { r: 255, g: 255, b: 255 }, 'Planet ' + (celestialBodies.length + 1)));
-      }
-      else{
-        celestialBodies.push(new CelestialBody(8, endDrag.x, endDrag.y, 0, 0, { r: 255, g: 255, b: 255 }, 'Planet ' + (celestialBodies.length + 1)));
-      }
+      celestialBodies.push(
+        new CelestialBody(
+          'planet',
+          8,
+          endDrag.x,
+          endDrag.y,
+          -launchVelocityX,
+          -launchVelocityY,
+          { r: 255, g: 255, b: 255 },
+          'Planet ' + (celestialBodies.length + 1)
+        )
+      );
     } else if (lastPressedKey === 's') {
-      if(launchVelocity){
-        celestialBodies.push(new CelestialBody(70, endDrag.x, endDrag.y, -launchVelocityX, -launchVelocityY, { r: 255, g: 165, b: 0 }, 'Star ' + (celestialBodies.length + 1)));
-      }
-      else{
-        celestialBodies.push(new CelestialBody(70, endDrag.x, endDrag.y, 0, 0, { r: 255, g: 165, b: 0 }, 'Star ' + (celestialBodies.length + 1)));
-      }
+      celestialBodies.push(
+        new CelestialBody(
+          'star',
+          70,
+          endDrag.x,
+          endDrag.y,
+          -launchVelocityX,
+          -launchVelocityY,
+          { r: 255, g: 165, b: 0 },
+          'Star ' + (celestialBodies.length + 1)
+        )
+      );
+    }else if (lastPressedKey === 'b') {
+      celestialBodies.push(
+        new CelestialBody(
+          'blackHole',
+          60,
+          endDrag.x,
+          endDrag.y,
+          -launchVelocityX,
+          -launchVelocityY,
+          { r: 0, g: 0, b: 0 },
+          'Black Hole ' + (celestialBodies.length + 1),
+          1000000,
+          'rgba(100, 100, 100, 0.5)',
+          'rgba(255, 255, 255, 0.9)'
+        )
+      );
     }
 
     console.log(celestialBodies);
@@ -337,6 +384,12 @@ window.addEventListener('keyup', function(e) {
   }
 });
 
+// Add a variable to store the target camera position
+let targetCamera = { x: 0, y: 0 };
+
+// Modify the camera movement speed (adjust as needed)
+const cameraMoveSpeed = 0.2;
+
 function draw() {
   ctx.fillStyle = 'black';
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -349,11 +402,20 @@ function draw() {
 
   if (celestialBodies.length > 0 && cameraFollowingIndex < celestialBodies.length && cameraFollow) {
     const followedBody = celestialBodies[cameraFollowingIndex];
-    camera.x = followedBody.x - canvas.width / 2;
-    camera.y = followedBody.y - canvas.height / 2;
+
+    // Set the target camera position
+    targetCamera.x = followedBody.x - canvas.width / 2;
+    targetCamera.y = followedBody.y - canvas.height / 2;
+
+    // Smoothly move the camera towards the target
+    camera.x += (targetCamera.x - camera.x) * cameraMoveSpeed;
+    camera.y += (targetCamera.y - camera.y) * cameraMoveSpeed;
   }
 
-  drawBackgroundStars();
+  if (camera.prevX !== camera.x || camera.prevY !== camera.y) {
+    ctx2.clearRect(0, 0, canvas.width, canvas.height);
+    drawBackgroundStars();
+  }
 
   celestialBodies.forEach(body => {
     body.draw();
@@ -386,8 +448,13 @@ function draw() {
     }
   }
 
+  // Update last camera position
+  camera.prevX = camera.x;
+  camera.prevY = camera.y;
+
   requestAnimationFrame(draw);
 }
+
 draw();
 
 function bodyCollide(body1, body2) {
@@ -438,5 +505,76 @@ function bodyCollide(body1, body2) {
       if (relativeVelocityDotProduct > 0) {
           return;  // Balls are moving apart, not colliding
       }
+  }
+
+  massTransfer(body1, body2);
+}
+
+function massTransfer(body1, body2) {
+  if (body1.bodyType === 'blackHole' || body2.bodyType === 'blackHole') {
+    // Case: Black hole collides with another body (including another black hole)
+    // Remove the other body from the array and add its mass to the black hole
+
+    const nonBlackHole = body1.bodyType === 'blackHole' ? body2 : body1;
+    celestialBodies.splice(celestialBodies.indexOf(nonBlackHole), 1);
+    const blackHole = body1.bodyType === 'blackHole' ? body1 : body2;
+    blackHole.weight += nonBlackHole.weight;
+    blackHole.radius += Math.sqrt(nonBlackHole.weight / Math.PI) /10;
+    blackHole.dx /= 100;
+    blackHole.dy /= 100;
+  } 
+  
+  else if ((body1.bodyType === 'star' && body2.bodyType === 'planet') ||
+            (body1.bodyType === 'planet' && body2.bodyType === 'star')) {
+    // Case: Star and planet collide
+    // Remove the planet and add its mass to the star
+    const star = body1.bodyType === 'star' ? body1 : body2;
+    const planet = body1.bodyType === 'planet' ? body1 : body2;
+    celestialBodies.splice(celestialBodies.indexOf(planet), 1);
+    star.weight += planet.weight;
+    star.radius = Math.sqrt(star.weight / Math.PI);
+  } 
+  
+  else if (body1.bodyType === 'star' && body2.bodyType === 'star') {
+    // Case: Star collides with star
+    // There is a very small chance of becoming a black hole, otherwise, one gains mass and the other is removed
+    const chanceOfBlackHole = 0.01; // Adjust the chance as needed
+    if (Math.random() < chanceOfBlackHole) {
+      celestialBodies.splice(celestialBodies.indexOf(body1), 1);
+      celestialBodies.splice(celestialBodies.indexOf(body2), 1);
+      celestialBodies.push(
+        new CelestialBody(
+          'blackHole',
+          60,
+          (body1.x + body2.x) / 2,
+          (body1.y + body2.y) / 2,
+          (body1.dx + body2.dx) / 2,
+          (body1.dy + body2.dy) / 2,
+          { r: 0, g: 0, b: 0 },
+          'Black Hole ' + (celestialBodies.length + 1),
+          body1.weight + body2.weight,
+          'rgba(100, 100, 100, 0.5)',
+          'rgba(255, 255, 255, 0.9)'
+        )
+      );
+    } 
+    
+    else {
+      const survivor = body1.weight >= body2.weight ? body1 : body2;
+      const removed = body1.weight < body2.weight ? body1 : body2;
+      survivor.weight += removed.weight;
+      survivor.radius = Math.sqrt(survivor.weight / Math.PI);
+      celestialBodies.splice(celestialBodies.indexOf(removed), 1);
+    }
+  } 
+  
+  else if (body1.bodyType === 'planet' && body2.bodyType === 'planet') {
+    // Case: Planet collides with a planet
+    // Remove one planet and add its mass to the other
+    const survivor = body1.weight >= body2.weight ? body1 : body2;
+    const removed = body1.weight < body2.weight ? body1 : body2;
+    survivor.weight += removed.weight;
+    survivor.radius = Math.sqrt(survivor.weight / Math.PI);
+    celestialBodies.splice(celestialBodies.indexOf(removed), 1);
   }
 }
