@@ -528,6 +528,7 @@ function massTransfer(body1, body2) {
             (body1.bodyType === 'planet' && body2.bodyType === 'star')) {
     // Case: Star and planet collide
     // Remove the planet and add its mass to the star
+    
     const star = body1.bodyType === 'star' ? body1 : body2;
     const planet = body1.bodyType === 'planet' ? body1 : body2;
     celestialBodies.splice(celestialBodies.indexOf(planet), 1);
@@ -538,7 +539,8 @@ function massTransfer(body1, body2) {
   else if (body1.bodyType === 'star' && body2.bodyType === 'star') {
     // Case: Star collides with star
     // There is a very small chance of becoming a black hole, otherwise, one gains mass and the other is removed
-    const chanceOfBlackHole = 0.01; // Adjust the chance as needed
+
+    const chanceOfBlackHole = 0.05;
     if (Math.random() < chanceOfBlackHole) {
       celestialBodies.splice(celestialBodies.indexOf(body1), 1);
       celestialBodies.splice(celestialBodies.indexOf(body2), 1);
@@ -552,7 +554,7 @@ function massTransfer(body1, body2) {
           (body1.dy + body2.dy) / 2,
           { r: 0, g: 0, b: 0 },
           'Black Hole ' + (celestialBodies.length + 1),
-          body1.weight + body2.weight,
+          (body1.weight + body2.weight)*2,
           'rgba(100, 100, 100, 0.5)',
           'rgba(255, 255, 255, 0.9)'
         )
@@ -562,19 +564,36 @@ function massTransfer(body1, body2) {
     else {
       const survivor = body1.weight >= body2.weight ? body1 : body2;
       const removed = body1.weight < body2.weight ? body1 : body2;
-      survivor.weight += removed.weight;
-      survivor.radius = Math.sqrt(survivor.weight / Math.PI);
-      celestialBodies.splice(celestialBodies.indexOf(removed), 1);
+      if(removed.weight > survivor.weight/10) {
+        survivor.weight += removed.weight/2;
+        survivor.radius = Math.sqrt(survivor.weight / Math.PI);
+        removed.weight = removed.weight/2;
+        removed.radius = Math.sqrt(removed.weight / Math.PI);
+      }
+      else {
+        survivor.weight += removed.weight;
+        survivor.radius = Math.sqrt(survivor.weight / Math.PI);
+        celestialBodies.splice(celestialBodies.indexOf(removed), 1);
+      }
     }
   } 
   
   else if (body1.bodyType === 'planet' && body2.bodyType === 'planet') {
     // Case: Planet collides with a planet
     // Remove one planet and add its mass to the other
+
     const survivor = body1.weight >= body2.weight ? body1 : body2;
     const removed = body1.weight < body2.weight ? body1 : body2;
-    survivor.weight += removed.weight;
-    survivor.radius = Math.sqrt(survivor.weight / Math.PI);
-    celestialBodies.splice(celestialBodies.indexOf(removed), 1);
+    if (removed.weight > survivor.weight / 10) {
+      survivor.weight += removed.weight / 2;
+      survivor.radius = Math.sqrt(survivor.weight / Math.PI);
+      removed.weight = removed.weight / 2;
+      removed.radius = Math.sqrt(removed.weight / Math.PI);
+    }
+    else {
+      survivor.weight += removed.weight;
+      survivor.radius = Math.sqrt(survivor.weight / Math.PI);
+      celestialBodies.splice(celestialBodies.indexOf(removed), 1);
+    }
   }
 }
