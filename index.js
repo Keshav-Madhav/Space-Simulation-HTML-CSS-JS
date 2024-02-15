@@ -50,7 +50,7 @@ class CelestialBody {
     this.weight = weight || radius * radius * Math.PI;
     this.elasticity = 0.6;
     this.trajectory = [];
-    this.maxTrajectoryPoints = 30000;
+    this.maxTrajectoryPoints = 3000;
     this.label = label;
     this.prevX = x;
     this.prevY = y;
