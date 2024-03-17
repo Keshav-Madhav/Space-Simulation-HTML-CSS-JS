@@ -1,8 +1,11 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-const canvas2 = document.getElementById('canvas2');
-const ctx2 = canvas2.getContext('2d');
+const starCanvas = document.getElementById('canvas2');
+const starCtx = starCanvas.getContext('2d');
+
+const trailCanvas = document.getElementById('canvas3');
+const trailctx = trailCanvas.getContext('2d');
 
 let lastPressedKey = null;
 let startDrag = null;
@@ -15,8 +18,10 @@ window.addEventListener('resize', resizeCanvas);
 function resizeCanvas() {
   canvas.width = window.innerWidth - 10;
   canvas.height = window.innerHeight - 5;
-  canvas2.width = window.innerWidth - 10;
-  canvas2.height = window.innerHeight - 5;
+  starCanvas.width = window.innerWidth - 10;
+  starCanvas.height = window.innerHeight - 5;
+  trailCanvas.width = window.innerWidth - 10;
+  trailCanvas.height = window.innerHeight - 5;
 }
 resizeCanvas();
 
@@ -98,31 +103,27 @@ class CelestialBody {
 
   updateTrajectory() {
     this.trajectory.push({ x: this.x, y: this.y });
-
-    if (this.trajectory.length > this.maxTrajectoryPoints) {
-      this.trajectory.shift();
-    }
   }
 
   drawTrajectory() {
     if (this.dx !== 0 || this.dy !== 0) {
-      ctx.setLineDash([6, 2]);
-      ctx.strokeStyle = this.trailColor;
-      ctx.beginPath();
-  
+      trailctx.setLineDash([6, 2]);
+      trailctx.strokeStyle = this.trailColor;
+      trailctx.beginPath();
+
       this.trajectory.forEach((point, index) => {
         const cameraAdjustedX = point.x - camera.x;
         const cameraAdjustedY = point.y - camera.y;
-  
+
         if (index === 0) {
-          ctx.moveTo(cameraAdjustedX, cameraAdjustedY);
+          trailctx.moveTo(cameraAdjustedX, cameraAdjustedY);
         } else {
-          ctx.lineTo(cameraAdjustedX, cameraAdjustedY);
+          trailctx.lineTo(cameraAdjustedX, cameraAdjustedY);
         }
       });
-  
-      ctx.stroke();
-      ctx.setLineDash([]);
+
+      trailctx.stroke();
+      trailctx.setLineDash([]);
     }
   }
 
@@ -205,11 +206,11 @@ class BackgroundStar {
       this.y = adjustedY + (camera.y / (this.z*4));
     }
 
-    ctx2.beginPath();
-    ctx2.arc(adjustedX, adjustedY, this.z/3, 0, Math.PI * 2);
-    ctx2.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
-    ctx2.fill();
-    ctx2.closePath();
+    starCtx.beginPath();
+    starCtx.arc(adjustedX, adjustedY, this.z/3, 0, Math.PI * 2);
+    starCtx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+    starCtx.fill();
+    starCtx.closePath();
   }
 }
 
@@ -301,7 +302,7 @@ function endDragHandler(e) {
     const dy = endDrag.y - startDrag.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    const maxSpeed = 20;
+    const maxSpeed = 50;
     const launchSpeed = Math.min(0.05 * distance, maxSpeed);
 
     let launchVelocityX = 0;
@@ -413,9 +414,11 @@ function draw() {
   }
 
   if (camera.prevX !== camera.x || camera.prevY !== camera.y) {
-    ctx2.clearRect(0, 0, canvas.width, canvas.height);
+    starCtx.clearRect(0, 0, canvas.width, canvas.height);
     drawBackgroundStars();
   }
+  
+  trailctx.clearRect(0, 0, canvas.width, canvas.height);  
 
   celestialBodies.forEach(body => {
     body.draw();
@@ -451,6 +454,8 @@ function draw() {
   // Update last camera position
   camera.prevX = camera.x;
   camera.prevY = camera.y;
+
+  drawFPS(ctx);
 
   requestAnimationFrame(draw);
 }
