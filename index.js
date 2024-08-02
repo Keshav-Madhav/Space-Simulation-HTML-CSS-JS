@@ -27,6 +27,12 @@ resizeCanvas();
 
 const celestialBodies = [];
 
+// Add a variable to store the target camera position
+let targetCamera = { x: 0, y: 0 };
+
+// Modify the camera movement speed (adjust as needed)
+const cameraMoveSpeed = 1;
+
 const camera = {
   x: 0,
   y: 0,
@@ -48,6 +54,7 @@ class CelestialBody {
     this.x = x;
     this.y = y;
     this.dx = dx;
+    // this.dx = 2997.92458 * 1;
     this.dy = dy;
     this.color = `rgba(${color.r}, ${color.g}, ${color.b}, 1)`;
     this.trailColor = trailColor || `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`;
@@ -385,12 +392,6 @@ window.addEventListener('keyup', function(e) {
   }
 });
 
-// Add a variable to store the target camera position
-let targetCamera = { x: 0, y: 0 };
-
-// Modify the camera movement speed (adjust as needed)
-const cameraMoveSpeed = 0.2;
-
 function draw() {
   ctx.fillStyle = 'black';
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -600,5 +601,34 @@ function massTransfer(body1, body2) {
       survivor.radius = Math.sqrt(survivor.weight / Math.PI);
       celestialBodies.splice(celestialBodies.indexOf(removed), 1);
     }
+  }
+}
+
+
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'k') {
+    spawnPlanetsNearMouse(15);
+  }
+});
+
+function spawnPlanetsNearMouse(numPlanets) {
+  const mousePosition = { x: camera.x + canvas.width / 2, y: camera.y + canvas.height / 2 };
+
+  for (let i = 0; i < numPlanets; i++) {
+    const randomXOffset = Math.random() * 400 ; // Adjust the range as needed
+    const randomYOffset = Math.random() * 400 ; // Adjust the range as needed
+
+    const newPlanet = new CelestialBody(
+      'planet',
+      8,
+      mousePosition.x + randomXOffset,
+      mousePosition.y + randomYOffset,
+      Math.random() * 2 - 1, // Random velocity in x direction
+      Math.random() * 2 - 1, // Random velocity in y direction
+      { r: 255, g: 255, b: 255 },
+      'Planet ' + (celestialBodies.length + 1)
+    );
+
+    celestialBodies.push(newPlanet);
   }
 }
