@@ -12,6 +12,7 @@ let startDrag = null;
 var endDrag = null;
 let cameraFollowingIndex = 0;
 let cameraFollow = false;
+let collideIsON = true;
 
 //resize canvas
 window.addEventListener('resize', resizeCanvas);
@@ -269,6 +270,14 @@ document.addEventListener('keydown', function (event) {
     celestialBodies.length = 0; // Clear the array
     console.log('All celestial bodies removed.');
   }
+
+  if (event.key === 'k') {
+    spawnPlanetsNearMouse(15);
+  }
+
+  if(event.key === 'x'){
+    collideIsON = !collideIsON;
+  }
 });
 
 function startDragHandler(e) {
@@ -440,14 +449,16 @@ function draw() {
     ctx.setLineDash([]);
   }
 
-  for (let i = 0; i < celestialBodies.length; i++) {
-    for (let j = i + 1; j < celestialBodies.length; j++) {
-      const dx = celestialBodies[i].x - celestialBodies[j].x;
-      const dy = celestialBodies[i].y - celestialBodies[j].y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      if (distance < celestialBodies[i].radius + celestialBodies[j].radius) {
-        bodyCollide(celestialBodies[i], celestialBodies[j]);
+  if(collideIsON){
+    for (let i = 0; i < celestialBodies.length; i++) {
+      for (let j = i + 1; j < celestialBodies.length; j++) {
+        const dx = celestialBodies[i].x - celestialBodies[j].x;
+        const dy = celestialBodies[i].y - celestialBodies[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+  
+        if (distance < celestialBodies[i].radius + celestialBodies[j].radius) {
+          bodyCollide(celestialBodies[i], celestialBodies[j]);
+        }
       }
     }
   }
@@ -603,13 +614,6 @@ function massTransfer(body1, body2) {
     }
   }
 }
-
-
-document.addEventListener('keydown', function(event) {
-  if (event.key === 'k') {
-    spawnPlanetsNearMouse(15);
-  }
-});
 
 function spawnPlanetsNearMouse(numPlanets) {
   const mousePosition = { x: camera.x + canvas.width / 2, y: camera.y + canvas.height / 2 };
