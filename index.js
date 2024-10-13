@@ -13,6 +13,7 @@ var endDrag = null;
 let cameraFollowingIndex = 0;
 let cameraFollow = false;
 let collideIsON = true;
+let camSpeed = 5; 
 
 //resize canvas
 window.addEventListener('resize', resizeCanvas);
@@ -49,9 +50,25 @@ const keys = {
 };
 
 class CelestialBody {
-  constructor(bodyType, radius, x, y, dx, dy, color, label, weight, trailColor, textColor) {
+  constructor(
+    {
+      bodyType,
+      radius,
+      density,
+      x,
+      y,
+      dx,
+      dy,
+      color,
+      label,
+      trailColor,
+      textColor
+    }
+  ) {
     this.bodyType = bodyType;
     this.radius = radius;
+    this.density = density;
+    this.weight = 4 / 3 * Math.PI * radius * radius * radius * density;
     this.x = x;
     this.y = y;
     this.dx = dx;
@@ -60,7 +77,6 @@ class CelestialBody {
     this.color = `rgba(${color.r}, ${color.g}, ${color.b}, 1)`;
     this.trailColor = trailColor || `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`;
     this.textColor = textColor || `rgba(${color.r}, ${color.g}, ${color.b}, 0.9)`
-    this.weight = weight || radius * radius * Math.PI;
     this.elasticity = 0.6;
     this.trajectory = [];
     this.maxTrajectoryPoints = 3000;
@@ -87,9 +103,9 @@ class CelestialBody {
     this.updateTrajectory();
   
     ctx.fillStyle = this.textColor;
-    ctx.font = `20px Arial`;
+    ctx.font = `14px Arial`;
     const textWidth = ctx.measureText(this.label).width;
-    ctx.fillText(this.label, this.x - camera.x - textWidth / 2, this.y - camera.y + this.radius + 22);
+    ctx.fillText(this.label, this.x - camera.x - textWidth / 2, this.y - camera.y + this.radius + 16);
   
     // Calculate magnitude of velocity
     const displacementX = this.x - this.prevX;
@@ -99,9 +115,9 @@ class CelestialBody {
   
     // Display the magnitude of velocity
     const velocityTextWidth = ctx.measureText(velocityText).width;
-    ctx.font = `14px Arial`;
+    ctx.font = `12px Arial`;
     ctx.fillStyle = this.textColor;
-    ctx.fillText(velocityText, this.x - camera.x - velocityTextWidth / 2, this.y - camera.y - this.radius - 10);
+    ctx.fillText(velocityText, this.x - camera.x - velocityTextWidth / 2, this.y - camera.y - this.radius - 6);
   
     // Update previous position for the next frame
     this.prevX = this.x;
@@ -188,30 +204,30 @@ class BackgroundStar {
   constructor() {
     this.x = Math.random() * window.innerWidth;
     this.y = Math.random() * window.innerHeight;
-    this.z = Math.random() * 10 + 1;
+    this.z = Math.random() * 5 + 1;
     this.opacity = Math.random() * 0.5;
     this.speed = Math.random() * 2 + 0.5;
   }
 
   draw() {
-    let adjustedX = this.x - (camera.x / (this.z*4));
-    let adjustedY = this.y - (camera.y / (this.z*4));
+    let adjustedX = this.x - (camera.x / (this.z*8));
+    let adjustedY = this.y - (camera.y / (this.z*8));
 
     if (adjustedX < 0) {
       adjustedX = window.innerWidth;
-      this.x = adjustedX + (camera.x / (this.z*4));
+      this.x = adjustedX + (camera.x / (this.z*8));
     }
     if (adjustedX > window.innerWidth) {
       adjustedX = 0;
-      this.x = adjustedX + (camera.x / (this.z*4));
+      this.x = adjustedX + (camera.x / (this.z*8));
     }
     if (adjustedY < 0) {
       adjustedY = window.innerHeight;
-      this.y = adjustedY + (camera.y / (this.z*4));
+      this.y = adjustedY + (camera.y / (this.z*8));
     }
     if (adjustedY > window.innerHeight) {
       adjustedY = 0;
-      this.y = adjustedY + (camera.y / (this.z*4));
+      this.y = adjustedY + (camera.y / (this.z*8));
     }
 
     starCtx.beginPath();
@@ -239,6 +255,11 @@ function drawBackgroundStars() {
   });
 }
 drawBackgroundStars();
+
+function calculateNewRadius(newWeight, originalRadius, originalWeight) {
+  const constant = originalWeight / (originalRadius * originalRadius * originalRadius);
+  return Math.cbrt(newWeight / constant);
+}
 
 document.addEventListener('keydown', function (event) {
   if (event.key === 'p' || event.key === 's' || event.key === 'b') {
@@ -331,49 +352,49 @@ function endDragHandler(e) {
 
     if (lastPressedKey === 'p') {
       celestialBodies.push(
-        new CelestialBody(
-          'planet',
-          8,
-          endDrag.x,
-          endDrag.y,
-          -launchVelocityX,
-          -launchVelocityY,
-          { r: 255, g: 255, b: 255 },
-          'Planet ' + (celestialBodies.length + 1)
-        )
+        new CelestialBody({
+          bodyType: 'planet',
+          radius: 4,
+          density: 0.5,
+          x: endDrag.x,
+          y: endDrag.y,
+          dx: -launchVelocityX,
+          dy: -launchVelocityY,
+          color: { r: 255, g: 255, b: 255 },
+          label: 'Planet ' + (celestialBodies.length + 1)
+        })
       );
     } else if (lastPressedKey === 's') {
       celestialBodies.push(
-        new CelestialBody(
-          'star',
-          70,
-          endDrag.x,
-          endDrag.y,
-          -launchVelocityX,
-          -launchVelocityY,
-          { r: 255, g: 165, b: 0 },
-          'Star ' + (celestialBodies.length + 1)
-        )
+        new CelestialBody({
+          bodyType: 'star',
+          radius: 10,
+          density: 2,
+          x: endDrag.x,
+          y: endDrag.y,
+          dx: -launchVelocityX,
+          dy: -launchVelocityY,
+          color: { r: 255, g: 165, b: 0 },
+          label: 'Star ' + (celestialBodies.length + 1)
+        })
       );
     }else if (lastPressedKey === 'b') {
       celestialBodies.push(
-        new CelestialBody(
-          'blackHole',
-          60,
-          endDrag.x,
-          endDrag.y,
-          -launchVelocityX,
-          -launchVelocityY,
-          { r: 0, g: 0, b: 0 },
-          'Black Hole ' + (celestialBodies.length + 1),
-          1000000,
-          'rgba(100, 100, 100, 0.5)',
-          'rgba(255, 255, 255, 0.9)'
-        )
+        new CelestialBody({
+          bodyType: 'blackHole',
+          radius: 15,
+          density: 10,
+          x: endDrag.x,
+          y: endDrag.y,
+          dx: -launchVelocityX,
+          dy: -launchVelocityY,
+          color: { r: 0, g: 0, b: 0 },
+          label: 'Black Hole ' + (celestialBodies.length + 1),
+          trailColor: 'rgba(100, 100, 100, 0.5)',
+          textColor: 'rgba(255, 255, 255, 0.9)'
+        })
       );
     }
-
-    console.log(celestialBodies);
 
     startDrag = null;
     endDrag = null;
@@ -393,11 +414,23 @@ window.addEventListener('keydown', function(e) {
     camera.x = 0;
     camera.y = 0;
   }
+  if (e.key === 'Shift') {
+    camSpeed = 20;
+  }
+  if(e.key === 'Control'){
+    camSpeed = 1;
+  }
 }); 
 
 window.addEventListener('keyup', function(e) {
   if (keys.hasOwnProperty(e.key)) {
     keys[e.key] = false;
+  }
+  if (e.key === 'Shift') {
+    camSpeed = 5;
+  }
+  if(e.key === 'Control'){
+    camSpeed = 5;
   }
 });
 
@@ -405,11 +438,10 @@ function draw() {
   ctx.fillStyle = 'black';
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  const speed = 5; // adjust as needed
-  if (keys.ArrowUp) camera.y -= speed;
-  if (keys.ArrowDown) camera.y += speed;
-  if (keys.ArrowLeft) camera.x -= speed;
-  if (keys.ArrowRight) camera.x += speed;
+  if (keys.ArrowUp) camera.y -= camSpeed;
+  if (keys.ArrowDown) camera.y += camSpeed;
+  if (keys.ArrowLeft) camera.x -= camSpeed;
+  if (keys.ArrowRight) camera.x += camSpeed;
 
   if (celestialBodies.length > 0 && cameraFollowingIndex < celestialBodies.length && cameraFollow) {
     const followedBody = celestialBodies[cameraFollowingIndex];
@@ -535,8 +567,8 @@ function massTransfer(body1, body2) {
     const nonBlackHole = body1.bodyType === 'blackHole' ? body2 : body1;
     celestialBodies.splice(celestialBodies.indexOf(nonBlackHole), 1);
     const blackHole = body1.bodyType === 'blackHole' ? body1 : body2;
+    blackHole.radius = calculateNewRadius(blackHole.weight + nonBlackHole.weight, blackHole.radius, blackHole.weight);
     blackHole.weight += nonBlackHole.weight;
-    blackHole.radius += Math.sqrt(nonBlackHole.weight / Math.PI) /10;
     blackHole.dx /= 100;
     blackHole.dy /= 100;
   } 
@@ -549,8 +581,8 @@ function massTransfer(body1, body2) {
     const star = body1.bodyType === 'star' ? body1 : body2;
     const planet = body1.bodyType === 'planet' ? body1 : body2;
     celestialBodies.splice(celestialBodies.indexOf(planet), 1);
+    star.radius = calculateNewRadius(star.weight + planet.weight, star.radius, star.weight);
     star.weight += planet.weight;
-    star.radius = Math.sqrt(star.weight / Math.PI);
   } 
   
   else if (body1.bodyType === 'star' && body2.bodyType === 'star') {
@@ -562,19 +594,19 @@ function massTransfer(body1, body2) {
       celestialBodies.splice(celestialBodies.indexOf(body1), 1);
       celestialBodies.splice(celestialBodies.indexOf(body2), 1);
       celestialBodies.push(
-        new CelestialBody(
-          'blackHole',
-          60,
-          (body1.x + body2.x) / 2,
-          (body1.y + body2.y) / 2,
-          (body1.dx + body2.dx) / 2,
-          (body1.dy + body2.dy) / 2,
-          { r: 0, g: 0, b: 0 },
-          'Black Hole ' + (celestialBodies.length + 1),
-          (body1.weight + body2.weight)*2,
-          'rgba(100, 100, 100, 0.5)',
-          'rgba(255, 255, 255, 0.9)'
-        )
+        new CelestialBody({
+          bodyType: 'blackHole',
+          radius: 60,
+          x: (body1.x + body2.x) / 2,
+          y: (body1.y + body2.y) / 2,
+          dx: (body1.dx + body2.dx) / 2,
+          dy: (body1.dy + body2.dy) / 2,
+          color: { r: 0, g: 0, b: 0 },
+          label: 'Black Hole ' + (celestialBodies.length + 1),
+          weight: body1.weight + body2.weight,
+          trailColor: 'rgba(100, 100, 100, 0.5)',
+          textColor: 'rgba(255, 255, 255, 0.9)'
+        })
       );
     } 
     
@@ -582,14 +614,14 @@ function massTransfer(body1, body2) {
       const survivor = body1.weight >= body2.weight ? body1 : body2;
       const removed = body1.weight < body2.weight ? body1 : body2;
       if(removed.weight > survivor.weight/10) {
+        survivor.radius = calculateNewRadius(survivor.weight + removed.weight, survivor.radius, survivor.weight);
         survivor.weight += removed.weight/2;
-        survivor.radius = Math.sqrt(survivor.weight / Math.PI);
+        removed.radius = calculateNewRadius(removed.weight/2, removed.radius, removed.weight);
         removed.weight = removed.weight/2;
-        removed.radius = Math.sqrt(removed.weight / Math.PI);
       }
       else {
+        survivor.radius = calculateNewRadius(survivor.weight + removed.weight, survivor.radius, survivor.weight);
         survivor.weight += removed.weight;
-        survivor.radius = Math.sqrt(survivor.weight / Math.PI);
         celestialBodies.splice(celestialBodies.indexOf(removed), 1);
       }
     }
@@ -602,14 +634,14 @@ function massTransfer(body1, body2) {
     const survivor = body1.weight >= body2.weight ? body1 : body2;
     const removed = body1.weight < body2.weight ? body1 : body2;
     if (removed.weight > survivor.weight / 10) {
+      survivor.radius = calculateNewRadius(survivor.weight + removed.weight, survivor.radius, survivor.weight);
       survivor.weight += removed.weight / 2;
-      survivor.radius = Math.sqrt(survivor.weight / Math.PI);
+      removed.radius = calculateNewRadius(removed.weight / 2, removed.radius, removed.weight);
       removed.weight = removed.weight / 2;
-      removed.radius = Math.sqrt(removed.weight / Math.PI);
     }
     else {
+      survivor.radius = calculateNewRadius(survivor.weight + removed.weight, survivor.radius, survivor.weight);
       survivor.weight += removed.weight;
-      survivor.radius = Math.sqrt(survivor.weight / Math.PI);
       celestialBodies.splice(celestialBodies.indexOf(removed), 1);
     }
   }
@@ -622,16 +654,17 @@ function spawnPlanetsNearMouse(numPlanets) {
     const randomXOffset = Math.random() * 400 ; // Adjust the range as needed
     const randomYOffset = Math.random() * 400 ; // Adjust the range as needed
 
-    const newPlanet = new CelestialBody(
-      'planet',
-      8,
-      mousePosition.x + randomXOffset,
-      mousePosition.y + randomYOffset,
-      Math.random() * 2 - 1, // Random velocity in x direction
-      Math.random() * 2 - 1, // Random velocity in y direction
-      { r: 255, g: 255, b: 255 },
-      'Planet ' + (celestialBodies.length + 1)
-    );
+    const newPlanet = new CelestialBody({
+      bodyType: 'planet',
+      radius: 4,
+      density: 0.5,
+      x: mousePosition.x + randomXOffset,
+      y: mousePosition.y + randomYOffset,
+      dx: Math.random() * 2 - 1, // Random velocity in x direction
+      dy: Math.random() * 2 - 1, // Random velocity in y direction 
+      color: { r: 255, g: 255, b: 255 },
+      label: 'Planet ' + (celestialBodies.length + 1)
+    });
 
     celestialBodies.push(newPlanet);
   }
