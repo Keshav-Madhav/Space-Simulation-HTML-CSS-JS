@@ -294,6 +294,15 @@ document.addEventListener('keydown', function (event) {
 
   if (event.key === 'k') {
     spawnPlanetsNearMouse(15);
+    cameraFollow = true;
+    cameraFollowingIndex = -1;
+  }
+
+  if (event.key === 't'){
+    setupThreeBodyProblem();
+    cameraFollow = true;
+    cameraFollowingIndex = -1;
+    collideIsON = false;
   }
 
   if(event.key === 'x'){
@@ -383,7 +392,7 @@ function endDragHandler(e) {
         new CelestialBody({
           bodyType: 'blackHole',
           radius: 15,
-          density: 10,
+          density: 30,
           x: endDrag.x,
           y: endDrag.y,
           dx: -launchVelocityX,
@@ -414,6 +423,10 @@ window.addEventListener('keydown', function(e) {
     camera.x = 0;
     camera.y = 0;
   }
+  if (e.code === 'Backspace') {
+    cameraFollowingIndex = -1;
+    cameraFollow = true;
+  }
   if (e.key === 'Shift') {
     camSpeed = 20;
   }
@@ -434,6 +447,128 @@ window.addEventListener('keyup', function(e) {
   }
 });
 
+function updateCameraToFollowCenterOfMass() {
+  if (celestialBodies.length === 0) return;
+
+  let totalMass = 0;
+  let centerX = 0;
+  let centerY = 0;
+
+  celestialBodies.forEach(body => {
+    totalMass += body.weight;
+    centerX += body.x * body.weight;
+    centerY += body.y * body.weight;
+  });
+
+  centerX /= totalMass;
+  centerY /= totalMass;
+
+  // Set the target camera position
+  targetCamera.x = centerX - canvas.width / 2;
+  targetCamera.y = centerY - canvas.height / 2;
+
+  // Smoothly move the camera towards the target
+  camera.x += (targetCamera.x - camera.x) * cameraMoveSpeed;
+  camera.y += (targetCamera.y - camera.y) * cameraMoveSpeed;
+}
+
+function setupThreeBodyProblem() {
+  // Clear existing celestial bodies
+  celestialBodies.length = 0;
+
+  // Define the center of the screen
+  const centerX = camera.x + canvas.width / 2;
+  const centerY = camera.y + canvas.height / 2;
+
+  // Define the base distance from the center for each planet
+  const baseDistance = 200;
+
+  // Create three planets in an equilateral triangle formation
+  const planets = [
+    {
+      angle: 0,
+      color: { r: 255, g: 0, b: 0 },
+      label: 'Planet Red'
+    },
+    {
+      angle: 2 * Math.PI / 3,
+      color: { r: 0, g: 255, b: 0 },
+      label: 'Planet Green'
+    },
+    {
+      angle: 4 * Math.PI / 3,
+      color: { r: 0, g: 0, b: 255 },
+      label: 'Planet Blue'
+    }
+  ];
+
+  planets.forEach((planet) => {
+    // Add small random variations to distance and angle
+    const distance = baseDistance + (Math.random() - 0.5) * 20; // +/- 10 units
+    const angleVariation = (Math.random() - 0.5) * 0.1; // +/- 0.05 radians
+    const adjustedAngle = planet.angle + angleVariation;
+
+    const x = centerX + distance * Math.cos(adjustedAngle);
+    const y = centerY + distance * Math.sin(adjustedAngle);
+
+    // Calculate initial velocity perpendicular to the radius
+    const baseSpeed = 1;
+    const speedVariation = (Math.random() - 0.5) * 0.2; // +/- 10% speed variation
+    const speed = baseSpeed + speedVariation;
+    const velocityAngle = adjustedAngle + Math.PI / 2;
+    const dx = speed * Math.cos(velocityAngle);
+    const dy = speed * Math.sin(velocityAngle);
+
+    // Add small random variations to mass (density)
+    const baseDensity = 1;
+    const densityVariation = (Math.random() - 0.5) * 0.2; // +/- 10% density variation
+    const density = baseDensity + densityVariation;
+
+    celestialBodies.push(
+      new CelestialBody({
+        bodyType: 'planet',
+        radius: 10,
+        density: density,
+        x: x,
+        y: y,
+        dx: dx,
+        dy: dy,
+        color: planet.color,
+        label: planet.label
+      })
+    );
+  });
+
+  // Set camera to follow the center of mass
+  cameraFollowingIndex = -1; // Custom value to indicate following center of mass
+  cameraFollow = true;
+}
+
+function updateCameraToFollowCenterOfMass() {
+  if (celestialBodies.length === 0) return;
+
+  let totalMass = 0;
+  let centerX = 0;
+  let centerY = 0;
+
+  celestialBodies.forEach(body => {
+    totalMass += body.weight;
+    centerX += body.x * body.weight;
+    centerY += body.y * body.weight;
+  });
+
+  centerX /= totalMass;
+  centerY /= totalMass;
+
+  // Set the target camera position
+  targetCamera.x = centerX - canvas.width / 2;
+  targetCamera.y = centerY - canvas.height / 2;
+
+  // Smoothly move the camera towards the target
+  camera.x += (targetCamera.x - camera.x) * cameraMoveSpeed;
+  camera.y += (targetCamera.y - camera.y) * cameraMoveSpeed;
+}
+
 function draw() {
   ctx.fillStyle = 'black';
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -443,16 +578,16 @@ function draw() {
   if (keys.ArrowLeft) camera.x -= camSpeed;
   if (keys.ArrowRight) camera.x += camSpeed;
 
-  if (celestialBodies.length > 0 && cameraFollowingIndex < celestialBodies.length && cameraFollow) {
-    const followedBody = celestialBodies[cameraFollowingIndex];
-
-    // Set the target camera position
-    targetCamera.x = followedBody.x - canvas.width / 2;
-    targetCamera.y = followedBody.y - canvas.height / 2;
-
-    // Smoothly move the camera towards the target
-    camera.x += (targetCamera.x - camera.x) * cameraMoveSpeed;
-    camera.y += (targetCamera.y - camera.y) * cameraMoveSpeed;
+  if (celestialBodies.length > 0 && cameraFollow) {
+    if (cameraFollowingIndex === -1) {
+      updateCameraToFollowCenterOfMass();
+    } else if (cameraFollowingIndex < celestialBodies.length) {
+      const followedBody = celestialBodies[cameraFollowingIndex];
+      targetCamera.x = followedBody.x - canvas.width / 2;
+      targetCamera.y = followedBody.y - canvas.height / 2;
+      camera.x += (targetCamera.x - camera.x) * cameraMoveSpeed;
+      camera.y += (targetCamera.y - camera.y) * cameraMoveSpeed;
+    }
   }
 
   if (camera.prevX !== camera.x || camera.prevY !== camera.y) {
