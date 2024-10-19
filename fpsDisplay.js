@@ -5,7 +5,7 @@ let lastframe = 0;
 let frameCount = 0;
 let currentFps = 0;
 
-function drawFPS(context) {
+function drawFPS(width, height, context) {
   // Calculate FPS
   frameCount++;
   let now = Date.now();
@@ -17,10 +17,10 @@ function drawFPS(context) {
   }
 
   // Draw FPS on canvas
-  context.clearRect(0, 0, 60, 15); // Clear the area where FPS will be drawn
+  context.clearRect(width - 60, 0, 60, 15); // Clear previous FPS display
   context.fillStyle = 'rgba(255, 255, 255, 0.5)';
-  context.fillRect(0, 0, 60, 15); // Background for FPS display
+  context.fillRect(width - 60, 10, 60, 15);
   context.fillStyle = 'black';
   context.font = '11px sans-serif';
-  context.fillText('FPS: ' + currentFps, 5, 10); // Align text against the left edge
+  context.fillText('FPS: ' + currentFps, width - 55, 22);
 }

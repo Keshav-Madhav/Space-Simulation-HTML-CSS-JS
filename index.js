@@ -634,7 +634,7 @@ function draw() {
   camera.prevX = camera.x;
   camera.prevY = camera.y;
 
-  drawFPS(ctx);
+  drawFPS(canvas.width, canvas.height, ctx);
 
   requestAnimationFrame(draw);
 }
