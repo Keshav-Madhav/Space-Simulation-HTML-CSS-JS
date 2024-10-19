@@ -1,3 +1,30 @@
+const PlanetRadius = document.getElementById('PlanetRadius');
+const PlanetDensity = document.getElementById('PlanetDensity');
+const PlanetColor = document.getElementById('PlanetColor');
+const StarRadius = document.getElementById('StarRadius');
+const StarDensity = document.getElementById('StarDensity');
+const StarColor = document.getElementById('StarColor');
+const BlackHoleRadius = document.getElementById('BlackHoleRadius');
+const BlackHoleDensity = document.getElementById('BlackHoleDensity');
+const BlackHoleColor = document.getElementById('BlackHoleColor');
+
+const followCam = document.getElementById('followCam');
+const camSpeedElement = document.getElementById('camSpeed');
+const prev = document.getElementById('prev');
+const next = document.getElementById('next');
+const centerMass = document.getElementById('centerMass');
+
+const collision = document.getElementById('collision');
+const showTrails = document.getElementById('showTrails');
+const showStars = document.getElementById('showStars');
+const showVelocities = document.getElementById('showVelocities');
+const showLabels = document.getElementById('showLabels');
+const showFPS = document.getElementById('showFPS');
+
+const threeBody = document.getElementById('threeBody');
+const cluster = document.getElementById('cluster');
+const reset = document.getElementById('reset');
+
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
@@ -14,6 +41,12 @@ let cameraFollowingIndex = 0;
 let cameraFollow = false;
 let collideIsON = true;
 let camSpeed = 5; 
+let backgroundStars = [];
+let showTrailsIsON = true;
+let showStarsIsON = true;
+let showVelocitiesIsON = true;
+let showLabelsIsON = true;
+let showFPSIsON = true;
 
 //resize canvas
 window.addEventListener('resize', resizeCanvas);
@@ -49,6 +82,126 @@ const keys = {
   ArrowRight: false
 };
 
+const celestialBodyValues = {
+  planet: {
+    radius: 4,
+    density: 0.5,
+    color: { r: 255, g: 255, b: 255 }
+  },
+  star: {
+    radius: 10,
+    density: 2,
+    color: { r: 255, g: 165, b: 0 }
+  },
+  blackHole: {
+    radius: 15,
+    density: 30,
+    color: { r: 0, g: 0, b: 0 }
+  }
+}
+
+
+// Add event listeners to update celestial body values
+
+PlanetRadius.addEventListener('input', function() {
+  celestialBodyValues.planet.radius = parseInt(this.value);
+});
+PlanetDensity.addEventListener('input', function() {
+  celestialBodyValues.planet.density = parseFloat(this.value);
+});
+PlanetColor.addEventListener('input', function() {
+  celestialBodyValues.planet.color = hexToRgb(this.value);
+});
+StarRadius.addEventListener('input', function() {
+  celestialBodyValues.star.radius = parseInt(this.value);
+});
+StarDensity.addEventListener('input', function() {
+  celestialBodyValues.star.density = parseFloat(this.value);
+});
+StarColor.addEventListener('input', function() {
+  celestialBodyValues.star.color = hexToRgb(this.value);
+});
+BlackHoleRadius.addEventListener('input', function() {
+  celestialBodyValues.blackHole.radius = parseInt(this.value);
+});
+BlackHoleDensity.addEventListener('input', function() {
+  celestialBodyValues.blackHole.density = parseFloat(this.value);
+});
+BlackHoleColor.addEventListener('input', function() {
+  celestialBodyValues.blackHole.color = hexToRgb(this.value);
+});
+
+
+// Add event listeners to camera settings
+
+followCam.addEventListener('change', function() {
+  cameraFollow = this.checked;
+});
+camSpeedElement.addEventListener('input', function() {
+  camSpeed = parseInt(this.value);
+});
+prev.addEventListener('click', function() {
+  cameraFollowingIndex = (cameraFollowingIndex - 1 + celestialBodies.length) % celestialBodies.length;
+  cameraFollow = true;
+  followCam.checked = true;
+});
+next.addEventListener('click', function() {
+  cameraFollowingIndex = (cameraFollowingIndex + 1) % celestialBodies.length;
+  cameraFollow = true;
+  followCam.checked = true;
+});
+centerMass.addEventListener('click', function() {
+  cameraFollowingIndex = -1;
+  cameraFollow = true;
+  followCam.checked = true;
+});
+
+
+// Add event listeners to toggle features
+
+collision.addEventListener('change', function() {
+  collideIsON = this.checked;
+});
+showVelocities.addEventListener('change', function() {
+  showVelocitiesIsON = this.checked;
+});
+showLabels.addEventListener('change', function() {
+  showLabelsIsON = this.checked;
+});
+showFPS.addEventListener('change', function() {
+  showFPSIsON = this.checked;
+});
+
+threeBody.addEventListener('click', function() {
+  setupThreeBodyProblem();
+  cameraFollow = true;
+  followCam.checked = true;
+  cameraFollowingIndex = -1;
+  collideIsON = false;
+  collision.checked = false;
+});
+
+cluster.addEventListener('click', function() {
+  spawnPlanetsNearMouse(15); 
+  cameraFollow = true;
+  followCam.checked = true;
+  cameraFollowingIndex = -1;
+});
+
+reset.addEventListener('click', function() {
+  resetEverything();
+});
+
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.substring(1, 3), 16);
+  const g = parseInt(hex.substring(3, 5), 16);
+  const b = parseInt(hex.substring(5, 7), 16);
+  return { r, g, b };
+}
+
+
+// Class to represent a celestial body
 class CelestialBody {
   constructor(
     {
@@ -99,25 +252,31 @@ class CelestialBody {
     }
   
     ctx.closePath();
-    this.drawTrajectory();
-    this.updateTrajectory();
+    if(showTrailsIsON) {
+      this.drawTrajectory();
+      this.updateTrajectory();
+    }
   
-    ctx.fillStyle = this.textColor;
-    ctx.font = `14px Arial`;
-    const textWidth = ctx.measureText(this.label).width;
-    ctx.fillText(this.label, this.x - camera.x - textWidth / 2, this.y - camera.y + this.radius + 16);
+    if (showLabelsIsON) {
+      ctx.fillStyle = this.textColor;
+      ctx.font = `14px Arial`;
+      const textWidth = ctx.measureText(this.label).width;
+      ctx.fillText(this.label, this.x - camera.x - textWidth / 2, this.y - camera.y + this.radius + 16);
+    }
   
-    // Calculate magnitude of velocity
-    const displacementX = this.x - this.prevX;
-    const displacementY = this.y - this.prevY;
-    const velocityMagnitude = Math.sqrt(displacementX ** 2 + displacementY ** 2);
-    const velocityText = `${(velocityMagnitude * 10).toFixed(2)}km/s`;
-  
-    // Display the magnitude of velocity
-    const velocityTextWidth = ctx.measureText(velocityText).width;
-    ctx.font = `12px Arial`;
-    ctx.fillStyle = this.textColor;
-    ctx.fillText(velocityText, this.x - camera.x - velocityTextWidth / 2, this.y - camera.y - this.radius - 6);
+    if (showVelocitiesIsON) {
+      // Calculate magnitude of velocity
+      const displacementX = this.x - this.prevX;
+      const displacementY = this.y - this.prevY;
+      const velocityMagnitude = Math.sqrt(displacementX ** 2 + displacementY ** 2);
+      const velocityText = `${(velocityMagnitude * 10).toFixed(2)}km/s`;
+    
+      // Display the magnitude of velocity
+      const velocityTextWidth = ctx.measureText(velocityText).width;
+      ctx.font = `12px Arial`;
+      ctx.fillStyle = this.textColor;
+      ctx.fillText(velocityText, this.x - camera.x - velocityTextWidth / 2, this.y - camera.y - this.radius - 6);
+    }
   
     // Update previous position for the next frame
     this.prevX = this.x;
@@ -200,6 +359,20 @@ class CelestialBody {
   }
 }
 
+
+showTrails.addEventListener('change', function() {
+  showTrailsIsON = this.checked;
+  if(!showTrailsIsON){
+    trailCanvas.style.display = 'none';
+    trailctx.clearRect(0, 0, canvas.width, canvas.height);
+    celestialBodies.forEach(body => {
+      body.trajectory = [];
+    });
+  } else {
+    trailCanvas.style.display = 'block';
+  }
+});
+
 class BackgroundStar {
   constructor() {
     this.x = Math.random() * window.innerWidth;
@@ -238,8 +411,6 @@ class BackgroundStar {
   }
 }
 
-const backgroundStars = [];
-
 function createBackgroundStars(numStars) {
   for (let i = 0; i < numStars; i++) {
     backgroundStars.push(new BackgroundStar());
@@ -255,6 +426,19 @@ function drawBackgroundStars() {
   });
 }
 drawBackgroundStars();
+
+showStars.addEventListener('change', function() {
+  showStarsIsON = this.checked;
+  if(showStarsIsON){
+    starCanvas.style.display = 'block';
+    createBackgroundStars(1500);
+    drawBackgroundStars();
+  } else {
+    starCanvas.style.display = 'none';
+    backgroundStars = [];
+    drawBackgroundStars();
+  }
+});
 
 function calculateNewRadius(newWeight, originalRadius, originalWeight) {
   const constant = originalWeight / (originalRadius * originalRadius * originalRadius);
@@ -363,13 +547,13 @@ function endDragHandler(e) {
       celestialBodies.push(
         new CelestialBody({
           bodyType: 'planet',
-          radius: 4,
-          density: 0.5,
+          radius: celestialBodyValues.planet.radius,
+          density: celestialBodyValues.planet.density,
           x: endDrag.x,
           y: endDrag.y,
           dx: -launchVelocityX,
           dy: -launchVelocityY,
-          color: { r: 255, g: 255, b: 255 },
+          color: celestialBodyValues.planet.color,
           label: 'Planet ' + (celestialBodies.length + 1)
         })
       );
@@ -377,13 +561,13 @@ function endDragHandler(e) {
       celestialBodies.push(
         new CelestialBody({
           bodyType: 'star',
-          radius: 10,
-          density: 2,
+          radius: celestialBodyValues.star.radius,
+          density: celestialBodyValues.star.density,
           x: endDrag.x,
           y: endDrag.y,
           dx: -launchVelocityX,
           dy: -launchVelocityY,
-          color: { r: 255, g: 165, b: 0 },
+          color: celestialBodyValues.star.color,
           label: 'Star ' + (celestialBodies.length + 1)
         })
       );
@@ -391,13 +575,13 @@ function endDragHandler(e) {
       celestialBodies.push(
         new CelestialBody({
           bodyType: 'blackHole',
-          radius: 15,
-          density: 30,
+          radius: celestialBodyValues.blackHole.radius,
+          density: celestialBodyValues.blackHole.density,
           x: endDrag.x,
           y: endDrag.y,
           dx: -launchVelocityX,
           dy: -launchVelocityY,
-          color: { r: 0, g: 0, b: 0 },
+          color: celestialBodyValues.blackHole.color,
           label: 'Black Hole ' + (celestialBodies.length + 1),
           trailColor: 'rgba(100, 100, 100, 0.5)',
           textColor: 'rgba(255, 255, 255, 0.9)'
@@ -429,9 +613,11 @@ window.addEventListener('keydown', function(e) {
   }
   if (e.key === 'Shift') {
     camSpeed = 20;
+    camSpeedElement.value = 20;
   }
   if(e.key === 'Control'){
     camSpeed = 1;
+    camSpeedElement.value = 1;
   }
 }); 
 
@@ -441,9 +627,11 @@ window.addEventListener('keyup', function(e) {
   }
   if (e.key === 'Shift') {
     camSpeed = 5;
+    camSpeedElement.value = 5;
   }
   if(e.key === 'Control'){
     camSpeed = 5;
+    camSpeedElement.value = 5;
   }
 });
 
@@ -590,9 +778,13 @@ function draw() {
     }
   }
 
-  if (camera.prevX !== camera.x || camera.prevY !== camera.y) {
+  if(showStarsIsON){
+    if (camera.prevX !== camera.x || camera.prevY !== camera.y) {
+      starCtx.clearRect(0, 0, canvas.width, canvas.height);
+      drawBackgroundStars();
+    }
+  } else {
     starCtx.clearRect(0, 0, canvas.width, canvas.height);
-    drawBackgroundStars();
   }
   
   trailctx.clearRect(0, 0, canvas.width, canvas.height);  
@@ -634,12 +826,10 @@ function draw() {
   camera.prevX = camera.x;
   camera.prevY = camera.y;
 
-  drawFPS(canvas.width, canvas.height, ctx);
-
-  requestAnimationFrame(draw);
+  if (showFPSIsON) drawFPS(canvas.width, canvas.height, ctx);
 }
 
-draw();
+createConstantFPSGameLoop(120, draw)
 
 function bodyCollide(body1, body2) {
   // Calculate the distance between the bodys
@@ -803,4 +993,45 @@ function spawnPlanetsNearMouse(numPlanets) {
 
     celestialBodies.push(newPlanet);
   }
+}
+
+
+function resetEverything() {
+  celestialBodies.length = 0;
+
+  // Reset celestial body values
+  PlanetRadius.value = celestialBodyValues.planet.radius = 4;
+  PlanetDensity.value = celestialBodyValues.planet.density = 0.5;
+  celestialBodyValues.planet.color = { r: 255, g: 255, b: 255 };
+  PlanetColor.value = '#ffffff';
+  StarRadius.value = celestialBodyValues.star.radius = 10;
+  StarDensity.value = celestialBodyValues.star.density = 2;
+  celestialBodyValues.star.color = { r: 255, g: 165, b: 0 };
+  StarColor.value = '#ffa500';
+  BlackHoleRadius.value = celestialBodyValues.blackHole.radius = 15;
+  BlackHoleDensity.value = celestialBodyValues.blackHole.density = 30;
+  celestialBodyValues.blackHole.color = { r: 0, g: 0, b: 0 };
+  BlackHoleColor.value = '#000000';
+
+  // Reset toggle settings
+  collideIsON = collision.checked = true;
+  showTrails.checked = true;
+  showStars.checked = true;
+  showFPS.checked = true;
+  showVelocities.checked = true;
+
+  // Reset camera settings
+  cameraFollow = followCam.checked = false;
+  cameraFollowingIndex = 0;
+  camera.x = 0;
+  camera.y = 0;
+  camera.prevX = 0;
+  camera.prevY = 0;
+  camSpeed = camSpeedElement.value = 5;
+
+  // Clear the background stars and redraw them
+  backgroundStars = [];
+  createBackgroundStars(1500);
+  starCtx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBackgroundStars();
 }
