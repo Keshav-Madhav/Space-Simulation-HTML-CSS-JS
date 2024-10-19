@@ -20,9 +20,11 @@ const showStars = document.getElementById('showStars');
 const showVelocities = document.getElementById('showVelocities');
 const showLabels = document.getElementById('showLabels');
 const showFPS = document.getElementById('showFPS');
+const veloctyUnit = document.getElementById('velocityUnit');
 
 const threeBody = document.getElementById('threeBody');
 const cluster = document.getElementById('cluster');
+const lightSpeedP = document.getElementById('lightSpeedP');
 const reset = document.getElementById('reset');
 
 const canvas = document.getElementById('canvas');
@@ -41,12 +43,12 @@ let cameraFollowingIndex = 0;
 let cameraFollow = false;
 let collideIsON = true;
 let camSpeed = 5; 
-let backgroundStars = [];
 let showTrailsIsON = true;
 let showStarsIsON = true;
 let showVelocitiesIsON = true;
 let showLabelsIsON = true;
 let showFPSIsON = true;
+let velocityUnit = 'm/s';
 
 //resize canvas
 window.addEventListener('resize', resizeCanvas);
@@ -60,6 +62,7 @@ function resizeCanvas() {
 }
 resizeCanvas();
 
+const backgroundStars = [];
 const celestialBodies = [];
 
 // Add a variable to store the target camera position
@@ -172,7 +175,17 @@ showFPS.addEventListener('change', function() {
   showFPSIsON = this.checked;
 });
 
+veloctyUnit.addEventListener('click', function() {
+  if(velocityUnit === 'm/s'){
+    velocityUnit = 'km/s';
+  } else {
+    velocityUnit = 'm/s';
+  }
+  veloctyUnit.textContent = velocityUnit;
+});
+
 threeBody.addEventListener('click', function() {
+  celestialBodies.length = 0;
   setupThreeBodyProblem();
   cameraFollow = true;
   followCam.checked = true;
@@ -186,6 +199,12 @@ cluster.addEventListener('click', function() {
   cameraFollow = true;
   followCam.checked = true;
   cameraFollowingIndex = -1;
+});
+
+lightSpeedP.addEventListener('click', function() {
+  spawnPlanetWithLightSpeed();
+  cameraFollow = true;
+  followCam.checked = true;
 });
 
 reset.addEventListener('click', function() {
@@ -269,13 +288,18 @@ class CelestialBody {
       const displacementX = this.x - this.prevX;
       const displacementY = this.y - this.prevY;
       const velocityMagnitude = Math.sqrt(displacementX ** 2 + displacementY ** 2);
-      const velocityText = `${(velocityMagnitude * 10).toFixed(2)}km/s`;
+      const velocityKMPS = `${(velocityMagnitude).toFixed(2)}km/s`;
+      const velocityMPS = `${(velocityMagnitude * 1000).toFixed(2)}m/s`;
     
       // Display the magnitude of velocity
-      const velocityTextWidth = ctx.measureText(velocityText).width;
+      const velocityTextWidth = ctx.measureText(velocityUnit === 'm/s' ? velocityMPS : velocityKMPS).width;
       ctx.font = `12px Arial`;
       ctx.fillStyle = this.textColor;
-      ctx.fillText(velocityText, this.x - camera.x - velocityTextWidth / 2, this.y - camera.y - this.radius - 6);
+      ctx.fillText(
+        velocityUnit === 'm/s' ? velocityMPS : velocityKMPS,
+        this.x - camera.x - velocityTextWidth / 2, 
+        this.y - camera.y - this.radius - 6
+      );
     }
   
     // Update previous position for the next frame
@@ -435,7 +459,7 @@ showStars.addEventListener('change', function() {
     drawBackgroundStars();
   } else {
     starCanvas.style.display = 'none';
-    backgroundStars = [];
+    backgroundStars.length = 0;
     drawBackgroundStars();
   }
 });
@@ -472,8 +496,7 @@ document.addEventListener('keydown', function (event) {
   }
 
   if (event.key === 'r') {
-    celestialBodies.length = 0; // Clear the array
-    console.log('All celestial bodies removed.');
+    resetEverything();
   }
 
   if (event.key === 'k') {
@@ -661,9 +684,6 @@ function updateCameraToFollowCenterOfMass() {
 }
 
 function setupThreeBodyProblem() {
-  // Clear existing celestial bodies
-  celestialBodies.length = 0;
-
   // Define the center of the screen
   const centerX = camera.x + canvas.width / 2;
   const centerY = camera.y + canvas.height / 2;
@@ -726,10 +746,6 @@ function setupThreeBodyProblem() {
       })
     );
   });
-
-  // Set camera to follow the center of mass
-  cameraFollowingIndex = -1; // Custom value to indicate following center of mass
-  cameraFollow = true;
 }
 
 function updateCameraToFollowCenterOfMass() {
@@ -995,6 +1011,27 @@ function spawnPlanetsNearMouse(numPlanets) {
   }
 }
 
+function spawnPlanetWithLightSpeed() {
+  const spawnPosition = { 
+    x: camera.x + canvas.width * Math.random(),
+    y: camera.y + canvas.height * Math.random()
+  };
+
+  const newPlanet = new CelestialBody({
+    bodyType: 'planet',
+    radius: 4,
+    density: 0.5,
+    x: spawnPosition.x,
+    y: spawnPosition.y,
+    dx: 299792.458 / 1000, // Speed of light in m/s
+    dy: 0,
+    color: { r: 255, g: 255, b: 255 },
+    label: 'Planet ' + (celestialBodies.length + 1)
+  });
+
+  celestialBodies.push(newPlanet);
+}
+
 
 function resetEverything() {
   celestialBodies.length = 0;
@@ -1030,7 +1067,7 @@ function resetEverything() {
   camSpeed = camSpeedElement.value = 5;
 
   // Clear the background stars and redraw them
-  backgroundStars = [];
+  backgroundStars.length = 0;
   createBackgroundStars(1500);
   starCtx.clearRect(0, 0, canvas.width, canvas.height);
   drawBackgroundStars();

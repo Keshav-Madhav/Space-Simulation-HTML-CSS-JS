@@ -122,6 +122,7 @@ input[type="color"]::-webkit-color-swatch {
 
 .misc > button[type="button"]{
   width: 100%;
+  margin-top: 0;
 }
 
 .menu-items > hr {
