@@ -1032,7 +1032,7 @@ function spawnPlanetWithLightSpeed() {
   celestialBodies.push(newPlanet);
 }
 
-
+// Reset all celestial bodies and settings
 function resetEverything() {
   celestialBodies.length = 0;
 
