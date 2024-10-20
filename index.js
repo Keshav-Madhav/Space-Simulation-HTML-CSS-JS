@@ -842,6 +842,10 @@ function draw() {
   camera.prevX = camera.x;
   camera.prevY = camera.y;
 
+  ctx.fillStyle = 'white';
+  ctx.font = '14px Arial';
+  ctx.fillText(`(${camera.x.toFixed(2)}, ${camera.y.toFixed(2)})`, 10, canvas.height - 10);
+
   if (showFPSIsON) drawFPS(canvas.width, canvas.height, ctx);
 }
 
