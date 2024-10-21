@@ -847,9 +847,11 @@ function draw() {
   ctx.fillText(`(${camera.x.toFixed(2)}, ${camera.y.toFixed(2)})`, 10, canvas.height - 10);
 
   if (showFPSIsON) drawFPS(canvas.width, canvas.height, ctx);
+
+  requestAnimationFrame(draw);
 }
 
-createConstantFPSGameLoop(120, draw)
+draw();
 
 function bodyCollide(body1, body2) {
   // Calculate the distance between the bodys
