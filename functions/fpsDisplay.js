@@ -5,7 +5,7 @@ let lastframe = 0;
 let frameCount = 0;
 let currentFps = 0;
 
-function drawFPS(width, height, context) {
+const drawFPS = (width, height, context) => {
   // Calculate FPS
   frameCount++;
   let now = Date.now();
@@ -24,3 +24,5 @@ function drawFPS(width, height, context) {
   context.font = '11px sans-serif';
   context.fillText('FPS: ' + currentFps, width - 55, 22);
 }
+
+export { drawFPS };

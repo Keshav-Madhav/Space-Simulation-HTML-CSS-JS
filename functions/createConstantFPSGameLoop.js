@@ -19,8 +19,10 @@
 // var fps = 60; // Set your desired fps
 // createConstantFPSGameLoop(fps, gameLoop);
 
-function createConstantFPSGameLoop(desiredFPS, gameLoopFunction) {
+const createConstantFPSGameLoop = (desiredFPS, gameLoopFunction) => {
   var interval = 1000 / desiredFPS;
 
   return setInterval(gameLoopFunction, interval);
 }
+
+export { createConstantFPSGameLoop };
