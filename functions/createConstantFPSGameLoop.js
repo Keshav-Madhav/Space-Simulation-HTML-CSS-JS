@@ -19,6 +19,12 @@
 // var fps = 60; // Set your desired fps
 // createConstantFPSGameLoop(fps, gameLoop);
 
+/**
+ * Create a game loop that runs at a constant frames per second (FPS)
+ * @param {number} desiredFPS - Desired frames per second for the game loop
+ * @param {Function} gameLoopFunction - Function containing the game logic
+ * @returns {number} - Returns the interval ID for the game loop
+ */
 const createConstantFPSGameLoop = (desiredFPS, gameLoopFunction) => {
   var interval = 1000 / desiredFPS;
 

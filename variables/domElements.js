@@ -27,11 +27,17 @@ const cluster = document.getElementById('cluster');
 const lightSpeedP = document.getElementById('lightSpeedP');
 const reset = document.getElementById('reset');
 
+/** @type {HTMLCanvasElement} */
 const canvas = document.getElementById('canvas');
+/** @type {CanvasRenderingContext2D} */
 const ctx = canvas.getContext('2d');
 
+/** @type {HTMLCanvasElement} */
 const starCanvas = document.getElementById('canvas2');
+/** @type {CanvasRenderingContext2D} */
 const starCtx = starCanvas.getContext('2d');
 
+/** @type {HTMLCanvasElement} */
 const trailCanvas = document.getElementById('canvas3');
+/** @type {CanvasRenderingContext2D} */
 const trailctx = trailCanvas.getContext('2d');

@@ -1,5 +1,12 @@
 import { CelestialBody } from "../classes/CelestialBodyClass.js";
 
+/**
+ * Handles elastic collision physics between two celestial bodies, including velocity calculations,
+ * overlap resolution, and mass transfer effects.
+ * @param {CelestialBody} body1 - First celestial body in the collision
+ * @param {CelestialBody} body2 - Second celestial body in the collision
+ * @returns {void}
+ */
 const bodyCollide = (body1, body2) => {
   // Calculate the distance between the bodys
   var dx = body1.x - body2.x;
@@ -53,6 +60,17 @@ const bodyCollide = (body1, body2) => {
   massTransfer(body1, body2);
 }
 
+/**
+ * Handles mass transfer and transformation effects when celestial bodies collide.
+ * Different rules apply based on the types of bodies involved:
+ * - Black holes absorb other bodies completely
+ * - Stars absorb planets
+ * - Star-star collisions may create black holes
+ * - Planet-planet collisions result in mass transfer or absorption
+ * 
+ * @param {CelestialBody} body1 - First celestial body in the collision
+ * @param {CelestialBody} body2 - Second celestial body in the collision
+ */
 function massTransfer(body1, body2) {
   if (body1.bodyType === 'blackHole' || body2.bodyType === 'blackHole') {
     // Case: Black hole collides with another body (including another black hole)
@@ -140,6 +158,14 @@ function massTransfer(body1, body2) {
   }
 }
 
+/**
+ * Calculates the new radius of a celestial body after a mass change,
+ * maintaining the appropriate density relationship.
+ * @param {number} newWeight - The new mass of the body after collision
+ * @param {number} originalRadius - The original radius before collision
+ * @param {number} originalWeight - The original mass before collision
+ * @returns {number} The new radius of the celestial body
+ */
 function calculateNewRadius(newWeight, originalRadius, originalWeight) {
   const constant = originalWeight / (originalRadius * originalRadius * originalRadius);
   return Math.cbrt(newWeight / constant);

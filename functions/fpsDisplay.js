@@ -5,6 +5,12 @@ let lastframe = 0;
 let frameCount = 0;
 let currentFps = 0;
 
+/**
+ * Draw FPS on canvas
+ * @param {number} width - Width of canvas
+ * @param {number} height - Height of canvas
+ * @param {CanvasRenderingContext2D} context - 2D rendering context for the canvas
+ */
 const drawFPS = (width, height, context) => {
   // Calculate FPS
   frameCount++;

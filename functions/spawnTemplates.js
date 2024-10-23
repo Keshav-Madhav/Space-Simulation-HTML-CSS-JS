@@ -1,6 +1,11 @@
 import { CelestialBody } from "../classes/CelestialBodyClass.js";
 import { screenToWorldCoordinates } from "./utils.js";
 
+/** 
+ * Sets up a three-body problem with three planets in an equilateral triangle formation.
+ * Each planet has a random distance from the center, random velocity, and random mass.
+ * The planets are colored red, green, and blue, respectively.
+ */
 function setupThreeBodyProblem() {
   // Define the center of the screen
   const centerX = camera.x + canvas.width / 2;
@@ -66,7 +71,10 @@ function setupThreeBodyProblem() {
   });
 }
 
-
+/**
+ * Spawns a specified number of planets near the mouse cursor.
+ * @param {number} numPlanets The number of planets to spawn
+ */
 function spawnPlanetsNearMouse(numPlanets) {
   const worldCoords = screenToWorldCoordinates(canvas.width / 2, canvas.height / 2);
 
@@ -90,6 +98,9 @@ function spawnPlanetsNearMouse(numPlanets) {
   }
 }
 
+/**
+ * Spawns a planet with a velocity ewual to 1/1000th the speed of light.
+ */
 function spawnPlanetWithLightSpeed() {
   const worldCoords = screenToWorldCoordinates(
     canvas.width * Math.random(),

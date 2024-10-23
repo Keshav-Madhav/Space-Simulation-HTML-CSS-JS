@@ -1,5 +1,46 @@
-// Class to represent a celestial body
+/**
+ * Represents a celestial body in a space simulation with physical properties and rendering capabilities.
+ * @class
+ * @property {string} bodyType - The type of celestial body ('planet', 'star', 'blackHole')
+ * @property {number} radius - The radius of the celestial body
+ * @property {number} density - The density of the celestial body
+ * @property {number} weight - The weight/mass of the celestial body
+ * @property {number} x - Current x position
+ * @property {number} y - Current y position
+ * @property {number} dx - Velocity in x direction
+ * @property {number} dy - Velocity in y direction
+ * @property {number} ax - Acceleration in x direction
+ * @property {number} ay - Acceleration in y direction
+ * @property {string} color - RGB color string in rgba format
+ * @property {string} trailColor - Color used for trajectory trail
+ * @property {string} textColor - Color used for labels and text
+ * @property {number} elasticity - Bounce elasticity coefficient
+ * @property {Array<{x: number, y: number}>} trajectory - Array of previous positions
+ * @property {number} maxTrajectoryPoints - Maximum number of points in trajectory
+ * @property {string} label - Display label for the celestial body
+ * @property {number} prevX - Previous x position
+ * @property {number} prevY - Previous y position
+ */
 class CelestialBody {
+  /**
+   * Creates a new celestial body.
+   * @param {Object} params - The celestial body parameters
+   * @param {string} params.bodyType - Type of celestial body
+   * @param {number} [params.radius] - Radius (calculated from weight if not provided)
+   * @param {number} params.density - Density of the body
+   * @param {number} [params.weight] - Weight (calculated from radius if not provided)
+   * @param {number} params.x - Initial x position
+   * @param {number} params.y - Initial y position
+   * @param {number} params.dx - Initial velocity in x direction
+   * @param {number} params.dy - Initial velocity in y direction
+   * @param {Object} params.color - RGB color object
+   * @param {number} params.color.r - Red component (0-255)
+   * @param {number} params.color.g - Green component (0-255)
+   * @param {number} params.color.b - Blue component (0-255)
+   * @param {string} [params.label] - Display label
+   * @param {string} [params.trailColor] - Color for trajectory trail
+   * @param {string} [params.textColor] - Color for labels and text
+   */
   constructor(
     {
       bodyType,
@@ -36,6 +77,10 @@ class CelestialBody {
     this.prevY = y;
   }
 
+  /**
+   * Draws the celestial body on the canvas.
+   * Includes body, trajectory (if enabled), labels (if enabled), and velocity indicators (if enabled).
+   */
   draw() {
     ctx.beginPath();
     ctx.arc(this.x - camera.x, this.y - camera.y, this.radius, 0, Math.PI * 2);
@@ -86,11 +131,16 @@ class CelestialBody {
     this.prevY = this.y;
   }
   
-
+  /**
+   * Updates the trajectory array with current position.
+   */
   updateTrajectory() {
     this.trajectory.push({ x: this.x, y: this.y });
   }
 
+  /**
+   * Draws the trajectory path on the trail canvas.
+   */
   drawTrajectory() {
     if (this.dx !== 0 || this.dy !== 0) {
       trailctx.setLineDash([6, 2]);
@@ -113,6 +163,9 @@ class CelestialBody {
     }
   }
 
+  /**
+   * Updates the celestial body's position and velocity based on gravitational forces.
+   */
   update() {
     // Update position based on velocity
     this.x += this.dx;
@@ -126,6 +179,11 @@ class CelestialBody {
     this.dy += this.ay;
   }
 
+  /**
+   * Calculates the gravitational force between this body and another celestial body.
+   * @param {CelestialBody} otherBody - The other celestial body
+   * @returns {{ax: number, ay: number}} The acceleration components caused by gravitational force
+   */
   calculateGravitationalForce(otherBody) {
     const G = 0.1; // Gravitational constant (you can adjust this value)
     
@@ -146,6 +204,10 @@ class CelestialBody {
     return { ax: accelerationX, ay: accelerationY };
   }
 
+  /**
+   * Updates the body's acceleration based on gravitational forces from all other bodies.
+   * @param {CelestialBody[]} celestialBodies - Array of all celestial bodies in the simulation
+   */
   updateGravity(celestialBodies) {
     // Reset acceleration
     this.ax = 0;
