@@ -12,7 +12,9 @@ let showLabelsIsON = true;
 let showFPSIsON = true;
 let velocityUnit = 'm/s';
 let zoomFactor = 1;
-const zoomSpeed = 0.1;
+let zoomSpeed = 0.1;
+
+const cameraMoveSpeed = 1;
 
 /** @type {BackgroundStar[]} */
 const backgroundStars = [];

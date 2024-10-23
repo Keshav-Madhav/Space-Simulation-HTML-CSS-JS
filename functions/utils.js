@@ -14,14 +14,18 @@ const screenToWorldCoordinates = (screenX, screenY) => {
  * Zoom in by increasing the zoom factor.
  */
 const zoomIn = () => {
-  zoomFactor = Math.max(Math.min(zoomFactor + zoomSpeed, 6), 0.1);
+  // Apply exponential zoom for gradual zooming effect
+  zoomFactor = Math.max(Math.min(zoomFactor * (1 + zoomSpeed), 6), 0.1);
+  zoomFactor = parseFloat(zoomFactor.toFixed(2));
 }
 
 /**
  * Zoom out by decreasing the zoom factor.
  */
 const zoomOut = () => {
-  zoomFactor = Math.max(Math.min(zoomFactor - zoomSpeed, 6), 0.1);
+  // Apply exponential zoom for gradual zooming effect
+  zoomFactor = Math.max(Math.min(zoomFactor * (1 - zoomSpeed), 6), 0.1);
+  zoomFactor = parseFloat(zoomFactor.toFixed(2));
 }
 
 /**

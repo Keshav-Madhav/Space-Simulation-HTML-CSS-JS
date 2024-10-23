@@ -13,6 +13,8 @@ const camSpeedElement = document.getElementById('camSpeed');
 const prev = document.getElementById('prev');
 const next = document.getElementById('next');
 const centerMass = document.getElementById('centerMass');
+const zoomMinus = document.getElementById('zoomMinus');
+const zoomPlus = document.getElementById('zoomPlus');
 
 const collision = document.getElementById('collision');
 const showTrails = document.getElementById('showTrails');

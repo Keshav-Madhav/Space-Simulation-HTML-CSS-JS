@@ -64,6 +64,8 @@ centerMass.addEventListener('click', function() {
   cameraFollow = true;
   followCam.checked = true;
 });
+zoomMinus.addEventListener('click', zoomOut);
+zoomPlus.addEventListener('click', zoomIn);
 
 
 // Add event listeners to toggle features
@@ -406,13 +408,13 @@ function draw() {
   ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.scale(zoomFactor, zoomFactor);
   ctx.translate(-canvas.width / 2, -canvas.height / 2);
-  ctx.translate(-camera.x, -camera.y);
+  // ctx.translate(-camera.x, -camera.y);
 
   trailctx.save();
   trailctx.translate(canvas.width / 2, canvas.height / 2);
   trailctx.scale(zoomFactor, zoomFactor);
   trailctx.translate(-canvas.width / 2, -canvas.height / 2);
-  trailctx.translate(-camera.x, -camera.y);
+  // trailctx.translate(-camera.x, -camera.y); 
 
   if(showStarsIsON){
     if (camera.prevX !== camera.x || camera.prevY !== camera.y) {
@@ -465,7 +467,8 @@ function draw() {
 
   ctx.fillStyle = 'white';
   ctx.font = '14px Arial';
-  ctx.fillText(`(${camera.x.toFixed(2)}, ${camera.y.toFixed(2)})`, 10, canvas.height - 10);
+  ctx.fillText(`(${camera.x.toFixed(2)}, ${camera.y.toFixed(2)})`, 10, canvas.height - 20);
+  ctx.fillText(`Zoom Scale: ${zoomFactor}`, 10, canvas.height - 6);
 
   if (showFPSIsON) drawFPS(canvas.width, canvas.height, ctx);
 
