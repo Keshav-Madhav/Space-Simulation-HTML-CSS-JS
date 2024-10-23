@@ -49,6 +49,25 @@ let showVelocitiesIsON = true;
 let showLabelsIsON = true;
 let showFPSIsON = true;
 let velocityUnit = 'm/s';
+let zoomFactor = 1;
+const zoomSpeed = 0.1;
+
+function zoomIn() {
+  zoomFactor = Math.max(Math.min(zoomFactor + zoomSpeed, 6), 0.1);
+}
+
+function zoomOut() {
+  zoomFactor = Math.max(Math.min(zoomFactor - zoomSpeed, 6), 0.1);
+}
+
+canvas.addEventListener('wheel', function(event) {
+  event.preventDefault();
+  if (event.deltaY < 0) {
+    zoomIn();
+  } else {
+    zoomOut();
+  }
+});
 
 //resize canvas
 window.addEventListener('resize', resizeCanvas);
@@ -69,7 +88,7 @@ const celestialBodies = [];
 let targetCamera = { x: 0, y: 0 };
 
 // Modify the camera movement speed (adjust as needed)
-const cameraMoveSpeed = 1;
+let cameraMoveSpeed = 1;
 
 const camera = {
   x: 0,
@@ -196,9 +215,6 @@ threeBody.addEventListener('click', function() {
 
 cluster.addEventListener('click', function() {
   spawnPlanetsNearMouse(15); 
-  cameraFollow = true;
-  followCam.checked = true;
-  cameraFollowingIndex = -1;
 });
 
 lightSpeedP.addEventListener('click', function() {
@@ -501,8 +517,6 @@ document.addEventListener('keydown', function (event) {
 
   if (event.key === 'k') {
     spawnPlanetsNearMouse(15);
-    cameraFollow = true;
-    cameraFollowingIndex = -1;
   }
 
   if (event.key === 't'){
@@ -517,9 +531,16 @@ document.addEventListener('keydown', function (event) {
   }
 });
 
+function screenToWorldCoordinates(screenX, screenY) {
+  const worldX = (screenX - canvas.width / 2) / zoomFactor + camera.x + canvas.width / 2;
+  const worldY = (screenY - canvas.height / 2) / zoomFactor + camera.y + canvas.height / 2;
+  return { x: worldX, y: worldY };
+}
+
 function startDragHandler(e) {
   e.preventDefault();
-  startDrag = { x: e.clientX + camera.x, y: e.clientY + camera.y };
+  const worldCoords = screenToWorldCoordinates(e.clientX, e.clientY);
+  startDrag = worldCoords;
   canvas.addEventListener('mousemove', dragHandler);
   canvas.addEventListener('mouseup', endDragHandler);
 }
@@ -541,15 +562,16 @@ function drawTrajectory(startX, startY, endX, endY) {
 
 function dragHandler(e) {
   e.preventDefault();
-  drawTrajectory(startDrag.x, startDrag.y, e.clientX + camera.x, e.clientY + camera.y);
-  endDrag = { x: e.clientX + camera.x, y: e.clientY + camera.y };
+  const worldCoords = screenToWorldCoordinates(e.clientX, e.clientY);
+  drawTrajectory(startDrag.x, startDrag.y, worldCoords.x, worldCoords.y);
+  endDrag = worldCoords;
 }
-
 
 function endDragHandler(e) {
   e.preventDefault();
   if (startDrag) {
-    endDrag = { x: e.clientX + camera.x, y: e.clientY + camera.y };
+    const worldCoords = screenToWorldCoordinates(e.clientX, e.clientY);
+    endDrag = worldCoords;
 
     const dx = endDrag.x - startDrag.x;
     const dy = endDrag.y - startDrag.y;
@@ -561,7 +583,7 @@ function endDragHandler(e) {
     let launchVelocityX = 0;
     let launchVelocityY = 0;
 
-    if (launchSpeed > 0 ){
+    if (launchSpeed > 0) {
       launchVelocityX = (dx / distance) * launchSpeed;
       launchVelocityY = (dy / distance) * launchSpeed;
     }
@@ -748,34 +770,9 @@ function setupThreeBodyProblem() {
   });
 }
 
-function updateCameraToFollowCenterOfMass() {
-  if (celestialBodies.length === 0) return;
-
-  let totalMass = 0;
-  let centerX = 0;
-  let centerY = 0;
-
-  celestialBodies.forEach(body => {
-    totalMass += body.weight;
-    centerX += body.x * body.weight;
-    centerY += body.y * body.weight;
-  });
-
-  centerX /= totalMass;
-  centerY /= totalMass;
-
-  // Set the target camera position
-  targetCamera.x = centerX - canvas.width / 2;
-  targetCamera.y = centerY - canvas.height / 2;
-
-  // Smoothly move the camera towards the target
-  camera.x += (targetCamera.x - camera.x) * cameraMoveSpeed;
-  camera.y += (targetCamera.y - camera.y) * cameraMoveSpeed;
-}
-
 function draw() {
-  ctx.fillStyle = 'black';
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  trailctx.clearRect(0, 0, canvas.width, canvas.height);  
 
   if (keys.ArrowUp) camera.y -= camSpeed;
   if (keys.ArrowDown) camera.y += camSpeed;
@@ -794,6 +791,19 @@ function draw() {
     }
   }
 
+  // Apply zoom and camera transformation
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.scale(zoomFactor, zoomFactor);
+  ctx.translate(-canvas.width / 2, -canvas.height / 2);
+  ctx.translate(-camera.x, -camera.y);
+
+  trailctx.save();
+  trailctx.translate(canvas.width / 2, canvas.height / 2);
+  trailctx.scale(zoomFactor, zoomFactor);
+  trailctx.translate(-canvas.width / 2, -canvas.height / 2);
+  trailctx.translate(-camera.x, -camera.y);
+
   if(showStarsIsON){
     if (camera.prevX !== camera.x || camera.prevY !== camera.y) {
       starCtx.clearRect(0, 0, canvas.width, canvas.height);
@@ -802,8 +812,6 @@ function draw() {
   } else {
     starCtx.clearRect(0, 0, canvas.width, canvas.height);
   }
-  
-  trailctx.clearRect(0, 0, canvas.width, canvas.height);  
 
   celestialBodies.forEach(body => {
     body.draw();
@@ -837,6 +845,9 @@ function draw() {
       }
     }
   }
+
+  ctx.restore();
+  trailctx.restore();
 
   // Update last camera position
   camera.prevX = camera.x;
@@ -995,20 +1006,20 @@ function massTransfer(body1, body2) {
 }
 
 function spawnPlanetsNearMouse(numPlanets) {
-  const mousePosition = { x: camera.x + canvas.width / 2, y: camera.y + canvas.height / 2 };
+  const worldCoords = screenToWorldCoordinates(canvas.width / 2, canvas.height / 2);
 
   for (let i = 0; i < numPlanets; i++) {
-    const randomXOffset = Math.random() * 400 ; // Adjust the range as needed
-    const randomYOffset = Math.random() * 400 ; // Adjust the range as needed
+    const randomXOffset = (Math.random() - 0.5) * 400 / zoomFactor;
+    const randomYOffset = (Math.random() - 0.5) * 400 / zoomFactor;
 
     const newPlanet = new CelestialBody({
       bodyType: 'planet',
       radius: 4,
       density: 0.5,
-      x: mousePosition.x + randomXOffset,
-      y: mousePosition.y + randomYOffset,
-      dx: Math.random() * 2 - 1, // Random velocity in x direction
-      dy: Math.random() * 2 - 1, // Random velocity in y direction 
+      x: worldCoords.x + randomXOffset,
+      y: worldCoords.y + randomYOffset,
+      dx: Math.random() * 2 - 1,
+      dy: Math.random() * 2 - 1,
       color: { r: 255, g: 255, b: 255 },
       label: 'Planet ' + (celestialBodies.length + 1)
     });
@@ -1018,18 +1029,18 @@ function spawnPlanetsNearMouse(numPlanets) {
 }
 
 function spawnPlanetWithLightSpeed() {
-  const spawnPosition = { 
-    x: camera.x + canvas.width * Math.random(),
-    y: camera.y + canvas.height * Math.random()
-  };
+  const worldCoords = screenToWorldCoordinates(
+    canvas.width * Math.random(),
+    canvas.height * Math.random()
+  );
 
   const newPlanet = new CelestialBody({
     bodyType: 'planet',
     radius: 4,
     density: 0.5,
-    x: spawnPosition.x,
-    y: spawnPosition.y,
-    dx: 299792.458 / 1000, // Speed of light in m/s
+    x: worldCoords.x,
+    y: worldCoords.y,
+    dx: 299792.458 / 1000,
     dy: 0,
     color: { r: 255, g: 255, b: 255 },
     label: 'Planet ' + (celestialBodies.length + 1)
