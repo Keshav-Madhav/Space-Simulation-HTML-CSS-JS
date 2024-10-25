@@ -74,12 +74,12 @@ const celestialBodyValues = {
   },
   star: {
     radius: 10,
-    density: 2,
+    density: 15,
     color: { r: 255, g: 165, b: 0 }
   },
   blackHole: {
     radius: 15,
-    density: 30,
+    density: 120,
     color: { r: 0, g: 0, b: 0 }
   }
 };

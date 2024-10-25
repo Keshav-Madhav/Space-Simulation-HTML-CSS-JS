@@ -1,6 +1,7 @@
 import { bodyCollide } from "./functions/collisionAndMassTransfer.js";
 import { drawFPS } from "./functions/fpsDisplay.js";
 import { createConstantFPSGameLoop } from "./functions/createConstantFPSGameLoop.js";
+import { getDeltaTime } from "./functions/deltaTime.js";
 import { CelestialBody } from "./classes/CelestialBodyClass.js";
 import { BackgroundStar } from "./classes/BackgroundStarsClass.js";
 import { screenToWorldCoordinates, zoomIn, zoomOut, hexToRGB, resizeCanvas } from "./functions/utils.js";
@@ -383,6 +384,7 @@ function updateCameraToFollowCenterOfMass() {
 }
 
 function draw() {
+  const deltaTime = getDeltaTime();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   trailctx.clearRect(0, 0, canvas.width, canvas.height);  
 
