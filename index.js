@@ -253,8 +253,7 @@ canvas.addEventListener('wheel', function(event) {
 
 function startDragHandler(e) {
   e.preventDefault();
-  const worldCoords = screenToWorldCoordinates(e.clientX, e.clientY);
-  startDrag = worldCoords;
+  startDrag  = screenToWorldCoordinates(e.clientX, e.clientY);
   canvas.addEventListener('mousemove', dragHandler);
   canvas.addEventListener('mouseup', endDragHandler);
 }
@@ -276,16 +275,13 @@ function drawTrajectory(startX, startY, endX, endY) {
 
 function dragHandler(e) {
   e.preventDefault();
-  const worldCoords = screenToWorldCoordinates(e.clientX, e.clientY);
-  drawTrajectory(startDrag.x, startDrag.y, worldCoords.x, worldCoords.y);
-  endDrag = worldCoords;
+  endDrag = screenToWorldCoordinates(e.clientX, e.clientY);
 }
 
 function endDragHandler(e) {
   e.preventDefault();
   if (startDrag) {
-    const worldCoords = screenToWorldCoordinates(e.clientX, e.clientY);
-    endDrag = worldCoords;
+    endDrag = screenToWorldCoordinates(e.clientX, e.clientY);
 
     const dx = endDrag.x - startDrag.x;
     const dy = endDrag.y - startDrag.y;
@@ -432,18 +428,8 @@ function draw() {
     body.update();
   });
 
-  if (startDrag) {
-    ctx.setLineDash([5, 5]);
-    ctx.beginPath();
-    ctx.moveTo(startDrag.x, startDrag.y);
-
-    if (endDrag) {
-      ctx.lineTo(endDrag.x, endDrag.y);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-      ctx.stroke();
-    }
-
-    ctx.setLineDash([]);
+  if (startDrag && endDrag) {
+    drawTrajectory(startDrag.x, startDrag.y, endDrag.x, endDrag.y);
   }
 
   if(collideIsON){

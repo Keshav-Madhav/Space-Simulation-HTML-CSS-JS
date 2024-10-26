@@ -11,6 +11,18 @@ const screenToWorldCoordinates = (screenX, screenY) => {
 }
 
 /**
+ * Converts world coordinates to screen coordinates based on the current camera position and zoom level.
+ * @param {number} worldX The x coordinate in world space
+ * @param {number} worldY The y coordinate in world space
+ * @returns {{x: number, y: number}} The screen coordinates
+ */
+const worldToScreenCoordinates = (worldX, worldY) => {
+  const screenX = ((worldX - canvas.width / 2 - camera.x) * zoomFactor) + canvas.width / 2;
+  const screenY = ((worldY - canvas.height / 2 - camera.y) * zoomFactor) + canvas.height / 2;
+  return { x: screenX, y: screenY };
+}
+
+/**
  * Zoom in by increasing the zoom factor.
  */
 const zoomIn = () => {
@@ -53,4 +65,4 @@ function resizeCanvas() {
 }
 
 
-export { screenToWorldCoordinates, zoomIn, zoomOut, hexToRGB, resizeCanvas };
+export { screenToWorldCoordinates, worldToScreenCoordinates, zoomIn, zoomOut, hexToRGB, resizeCanvas };
