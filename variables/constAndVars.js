@@ -13,6 +13,8 @@ let showFPSIsON = true;
 let velocityUnit = 'm/s';
 let zoomFactor = 1;
 let zoomSpeed = 0.1;
+let isCameraLockedOn = false;
+let smoothedSpeed = 0;
 
 const cameraMoveSpeed = 1;
 

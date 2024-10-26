@@ -102,9 +102,10 @@ class CelestialBody {
   
     if (showLabelsIsON) {
       ctx.fillStyle = this.textColor;
-      ctx.font = `14px Arial`;
+      const fontSize = zoomFactor > 0.5 ? 14 / zoomFactor : 14 * 0.6/ zoomFactor
+      ctx.font = `${fontSize}px Arial`;
       const textWidth = ctx.measureText(this.label).width;
-      ctx.fillText(this.label, this.x - camera.x - textWidth / 2, this.y - camera.y + this.radius + 16);
+      ctx.fillText(this.label, this.x - camera.x - textWidth / 2, this.y - camera.y + this.radius + (16/zoomFactor));
     }
   
     if (showVelocitiesIsON) {
@@ -117,12 +118,13 @@ class CelestialBody {
     
       // Display the magnitude of velocity
       const velocityTextWidth = ctx.measureText(velocityUnit === 'm/s' ? velocityMPS : velocityKMPS).width;
-      ctx.font = `12px Arial`;
+      const fontSize = zoomFactor > 0.5 ? 12 / zoomFactor : 12 * 0.6/ zoomFactor
+      ctx.font = `${fontSize}px Arial`;
       ctx.fillStyle = this.textColor;
       ctx.fillText(
         velocityUnit === 'm/s' ? velocityMPS : velocityKMPS,
         this.x - camera.x - velocityTextWidth / 2, 
-        this.y - camera.y - this.radius - 6
+        this.y - camera.y - this.radius - (6/zoomFactor)
       );
     }
   

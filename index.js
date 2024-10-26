@@ -6,6 +6,7 @@ import { CelestialBody } from "./classes/CelestialBodyClass.js";
 import { BackgroundStar } from "./classes/BackgroundStarsClass.js";
 import { screenToWorldCoordinates, zoomIn, zoomOut, hexToRGB, resizeCanvas } from "./functions/utils.js";
 import { spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, setupThreeBodyProblem } from "./functions/spawnTemplates.js";
+import { smoothFollow, updateCameraToFollowCenterOfMass } from "./functions/cameraHelper.js";
 
 //resize canvas
 window.addEventListener('resize', resizeCanvas);
@@ -250,7 +251,6 @@ canvas.addEventListener('wheel', function(event) {
   }
 });
 
-
 function startDragHandler(e) {
   e.preventDefault();
   startDrag  = screenToWorldCoordinates(e.clientX, e.clientY);
@@ -354,31 +354,6 @@ function endDragHandler(e) {
   }
 }
 
-function updateCameraToFollowCenterOfMass() {
-  if (celestialBodies.length === 0) return;
-
-  let totalMass = 0;
-  let centerX = 0;
-  let centerY = 0;
-
-  celestialBodies.forEach(body => {
-    totalMass += body.weight;
-    centerX += body.x * body.weight;
-    centerY += body.y * body.weight;
-  });
-
-  centerX /= totalMass;
-  centerY /= totalMass;
-
-  // Set the target camera position
-  targetCamera.x = centerX - canvas.width / 2;
-  targetCamera.y = centerY - canvas.height / 2;
-
-  // Smoothly move the camera towards the target
-  camera.x += (targetCamera.x - camera.x) * cameraMoveSpeed;
-  camera.y += (targetCamera.y - camera.y) * cameraMoveSpeed;
-}
-
 function draw() {
   const deltaTime = getDeltaTime();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -394,10 +369,10 @@ function draw() {
       updateCameraToFollowCenterOfMass();
     } else if (cameraFollowingIndex < celestialBodies.length) {
       const followedBody = celestialBodies[cameraFollowingIndex];
-      targetCamera.x = followedBody.x - canvas.width / 2;
-      targetCamera.y = followedBody.y - canvas.height / 2;
-      camera.x += (targetCamera.x - camera.x) * cameraMoveSpeed;
-      camera.y += (targetCamera.y - camera.y) * cameraMoveSpeed;
+      const targetX = followedBody.x - canvas.width / 2;
+      const targetY = followedBody.y - canvas.height / 2;
+      
+      smoothFollow(targetX, targetY, followedBody); // Smoothly follow the selected body
     }
   }
 
