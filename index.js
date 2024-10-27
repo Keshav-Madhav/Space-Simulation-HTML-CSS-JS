@@ -7,6 +7,7 @@ import { BackgroundStar } from "./classes/BackgroundStarsClass.js";
 import { screenToWorldCoordinates, zoomIn, zoomOut, hexToRGB, resizeCanvas } from "./functions/utils.js";
 import { spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, setupThreeBodyProblem } from "./functions/spawnTemplates.js";
 import { smoothFollow, updateCameraToFollowCenterOfMass } from "./functions/cameraHelper.js";
+import { prompt, showPrompts } from "./functions/showPrompts.js";
 
 //resize canvas
 window.addEventListener('resize', resizeCanvas);
@@ -225,10 +226,6 @@ window.addEventListener('keydown', function(e) {
     keys.ArrowRight = true;
   }
 
-  if (e.key === ' '){
-    camera.x = 0;
-    camera.y = 0;
-  }
   if (e.code === 'Backspace') {
     cameraFollowingIndex = -1;
     cameraFollow = true;
@@ -473,10 +470,13 @@ function updateUI() {
     const text = `Selected Body: ${selectedBody}`;
     ctx.fillText(text, canvas.width - ctx.measureText(text).width - 10, canvas.height - 20);
   }
+
   if(cameraFollow && (cameraFollowingIndex !== 0 || cameraFollowingIndex < -1)){
     const text = cameraFollowingIndex === -1 ? 'Following Center of Mass' : `Following: ${celestialBodies[cameraFollowingIndex].label}`
     ctx.fillText(text, canvas.width - ctx.measureText(text).width - 10, canvas.height - 6);
   }
+
+  showPrompts();
 
   if (showFPSIsON) drawFPS(canvas.width, canvas.height, ctx);
 }
@@ -523,3 +523,42 @@ function resetEverything() {
   starCtx.clearRect(0, 0, canvas.width, canvas.height);
   drawBackgroundStars();
 }
+
+function playInstructions() {
+  prompt({
+    text: "Use number keys to select a celestial body",
+    y: canvas.height - 50,
+    vel: 1.2,
+    time: 0.0014
+  });
+
+  prompt({
+    text: "Click to place a body or drag to launch it",
+    y: canvas.height - 50,
+    vel: 1.2,
+    time: 0.0014
+  });
+
+  prompt({
+    text: "Use WASD to move camera and scroll to zoom in/out",
+    y: canvas.height - 50,
+    vel: 1.2,
+    time: 0.0014
+  });
+
+  prompt({
+    text: "Press C to follow a body, E/Q to cycle through bodies",
+    y: canvas.height - 50,
+    vel: 1.2,
+    time: 0.0014
+  });
+
+  prompt({
+    text: "Use settings menu in top left to customize the simulation",
+    y: canvas.height - 50,
+    vel: 1.2,
+    time: 0.0014
+  });
+}
+
+playInstructions();
