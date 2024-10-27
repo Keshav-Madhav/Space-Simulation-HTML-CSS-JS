@@ -1,4 +1,3 @@
-let lastPressedKey = null;
 let startDrag = null;
 var endDrag = null;
 let cameraFollowingIndex = 0;
@@ -15,6 +14,7 @@ let zoomFactor = 1;
 let zoomSpeed = 0.1;
 let isCameraLockedOn = false;
 let smoothedSpeed = 0;
+let selectedBody = '';
 
 const cameraMoveSpeed = 1;
 

@@ -161,25 +161,27 @@ showStars.addEventListener('change', function() {
 });
 
 document.addEventListener('keydown', function (event) {
-  if (event.key === 'p' || event.key === 's' || event.key === 'b') {
-    lastPressedKey = event.key;
+  if (event.key === '1' || event.key === '2' || event.key === '3') {
+    switch (event.key) {
+      case '1':
+        selectedBody = 'Planet';
+        break;
+      case '2':
+        selectedBody = 'Star';
+        break;
+      case '3':
+        selectedBody = 'Black Hole';
+        break;
+    }
     startDrag = null;
     endDrag = null;
     canvas.addEventListener('mousedown', startDragHandler);
   }
 
   // Handle cycling through celestial bodies using 'n' and 'm'
-  if (event.key === 'n' || event.key === 'm') {
-    const direction = event.key === 'n' ? 1 : -1;
+  if (event.key === 'e' || event.key === 'q') {
+    const direction = event.key === 'e' ? 1 : -1;
     cameraFollowingIndex = (cameraFollowingIndex + direction + celestialBodies.length) % celestialBodies.length;
-  }
-
-  // Handle following celestial bodies using numbers '0' to '9'
-  if (event.key >= '0' && event.key <= '9') {
-    const index = parseInt(event.key);
-    if (index < celestialBodies.length) {
-      cameraFollowingIndex = index;
-    }
   }
 
   if (event.key === 'c') {
@@ -209,7 +211,20 @@ document.addEventListener('keydown', function (event) {
 window.addEventListener('keydown', function(e) {
   if (keys.hasOwnProperty(e.key)) {
     keys[e.key] = true;
+  } 
+  if (e.key === 'w'){
+    keys.ArrowUp = true;
+  } 
+  if (e.key === 's'){
+    keys.ArrowDown = true;
   }
+  if (e.key === 'a'){
+    keys.ArrowLeft = true;
+  }
+  if (e.key === 'd'){
+    keys.ArrowRight = true;
+  }
+
   if (e.key === ' '){
     camera.x = 0;
     camera.y = 0;
@@ -232,6 +247,19 @@ window.addEventListener('keyup', function(e) {
   if (keys.hasOwnProperty(e.key)) {
     keys[e.key] = false;
   }
+  if (e.key === 'w'){
+    keys.ArrowUp = false;
+  }
+  if (e.key === 's'){
+    keys.ArrowDown = false;
+  }
+  if (e.key === 'a'){
+    keys.ArrowLeft = false;
+  }
+  if (e.key === 'd'){
+    keys.ArrowRight = false;
+  }
+
   if (e.key === 'Shift') {
     camSpeed = 5;
     camSpeedElement.value = 5;
@@ -298,7 +326,7 @@ function endDragHandler(e) {
       launchVelocityY = (dy / distance) * launchSpeed;
     }
 
-    if (lastPressedKey === 'p') {
+    if (selectedBody === 'Planet') {
       celestialBodies.push(
         new CelestialBody({
           bodyType: 'planet',
@@ -312,7 +340,7 @@ function endDragHandler(e) {
           label: 'Planet ' + (celestialBodies.length + 1)
         })
       );
-    } else if (lastPressedKey === 's') {
+    } else if (selectedBody === 'Star') {
       celestialBodies.push(
         new CelestialBody({
           bodyType: 'star',
@@ -326,7 +354,7 @@ function endDragHandler(e) {
           label: 'Star ' + (celestialBodies.length + 1)
         })
       );
-    }else if (lastPressedKey === 'b') {
+    }else if (selectedBody === 'Black Hole') {
       celestialBodies.push(
         new CelestialBody({
           bodyType: 'blackHole',
@@ -350,7 +378,7 @@ function endDragHandler(e) {
     canvas.removeEventListener('mousemove', dragHandler);
     canvas.removeEventListener('mouseup', endDragHandler);
     canvas.removeEventListener('mousedown', startDragHandler);
-    lastPressedKey = null;
+    selectedBody = '';
   }
 }
 
@@ -428,17 +456,30 @@ function draw() {
   camera.prevX = camera.x;
   camera.prevY = camera.y;
 
-  ctx.fillStyle = 'white';
-  ctx.font = '14px Arial';
-  ctx.fillText(`(${camera.x.toFixed(2)}, ${camera.y.toFixed(2)})`, 10, canvas.height - 20);
-  ctx.fillText(`Zoom Scale: ${zoomFactor}`, 10, canvas.height - 6);
-
-  if (showFPSIsON) drawFPS(canvas.width, canvas.height, ctx);
+  updateUI();
 
   requestAnimationFrame(draw);
 }
 
 draw();
+
+function updateUI() {
+  ctx.fillStyle = 'white';
+  ctx.font = '14px Arial';
+  ctx.fillText(`(${camera.x.toFixed(2)}, ${camera.y.toFixed(2)})`, 10, canvas.height - 20);
+  ctx.fillText(`Zoom Scale: ${zoomFactor}`, 10, canvas.height - 6);
+
+  if(selectedBody){
+    const text = `Selected Body: ${selectedBody}`;
+    ctx.fillText(text, canvas.width - ctx.measureText(text).width - 10, canvas.height - 20);
+  }
+  if(cameraFollow && (cameraFollowingIndex !== 0 || cameraFollowingIndex < -1)){
+    const text = cameraFollowingIndex === -1 ? 'Following Center of Mass' : `Following: ${celestialBodies[cameraFollowingIndex].label}`
+    ctx.fillText(text, canvas.width - ctx.measureText(text).width - 10, canvas.height - 6);
+  }
+
+  if (showFPSIsON) drawFPS(canvas.width, canvas.height, ctx);
+}
 
 // Reset all celestial bodies and settings
 function resetEverything() {
