@@ -1,4 +1,4 @@
-const OPACITY_THRESHOLD = 0.5;
+const OPACITY_THRESHOLD = 0.4;
 
 /**
  * @typedef {Object} PromptSettings
@@ -76,7 +76,11 @@ function activateNextPrompt() {
   }
 }
 
-function showPrompts() {
+/**
+ * Updates and renders all active prompts
+ * @param {number} deltaTime - Time elapsed since last frame in seconds
+ */
+function showPrompts(deltaTime) {
   // Update and render all active prompts
   for (let i = activePrompts.length - 1; i >= 0; i--) {
     const prompt = activePrompts[i];
@@ -86,9 +90,11 @@ function showPrompts() {
     ctx.font = "28px Arial";
     ctx.fillText(prompt.text, prompt.x, prompt.y);
 
-    // Update prompt position and opacity
-    prompt.y -= prompt.vel;
-    prompt.opacity -= prompt.time;
+    // Update prompt position and opacity using deltaTime
+    // vel is in pixels per second, so multiply by deltaTime (seconds)
+    prompt.y -= prompt.vel * deltaTime;
+    // time is fade rate per second, so multiply by deltaTime
+    prompt.opacity -= prompt.time * deltaTime;
 
     // Remove prompt if it's completely faded out
     if (prompt.opacity <= 0) {

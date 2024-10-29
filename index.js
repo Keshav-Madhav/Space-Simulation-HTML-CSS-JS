@@ -453,14 +453,14 @@ function draw() {
   camera.prevX = camera.x;
   camera.prevY = camera.y;
 
-  updateUI();
+  updateUI(deltaTime);
 
   requestAnimationFrame(draw);
 }
 
 draw();
 
-function updateUI() {
+function updateUI(deltaTime) {
   ctx.fillStyle = 'white';
   ctx.font = '14px Arial';
   ctx.fillText(`(${camera.x.toFixed(2)}, ${camera.y.toFixed(2)})`, 10, canvas.height - 20);
@@ -476,7 +476,7 @@ function updateUI() {
     ctx.fillText(text, canvas.width - ctx.measureText(text).width - 10, canvas.height - 6);
   }
 
-  showPrompts();
+  showPrompts(deltaTime);
 
   if (showFPSIsON) drawFPS(canvas.width, canvas.height, ctx);
 }
@@ -528,36 +528,36 @@ function playInstructions() {
   prompt({
     text: "Use number keys to select a celestial body",
     y: canvas.height - 50,
-    vel: 1.2,
-    time: 0.0014
+    vel: 140,
+    time: 0.2
   });
 
   prompt({
     text: "Click to place a body or drag to launch it",
     y: canvas.height - 50,
-    vel: 1.2,
-    time: 0.0014
+    vel: 140,
+    time: 0.2
   });
 
   prompt({
     text: "Use WASD to move camera and scroll to zoom in/out",
     y: canvas.height - 50,
-    vel: 1.2,
-    time: 0.0014
+    vel: 140,
+    time: 0.2
   });
 
   prompt({
     text: "Press C to follow a body, E/Q to cycle through bodies",
     y: canvas.height - 50,
-    vel: 1.2,
-    time: 0.0014
+    vel: 140,
+    time: 0.2
   });
 
   prompt({
     text: "Use settings menu in top left to customize the simulation",
     y: canvas.height - 50,
-    vel: 1.2,
-    time: 0.0014
+    vel: 140,
+    time: 0.2
   });
 }
 
