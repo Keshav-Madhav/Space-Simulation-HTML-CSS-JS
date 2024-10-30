@@ -22,13 +22,32 @@
 /**
  * Create a game loop that runs at a constant frames per second (FPS)
  * @param {number} desiredFPS - Desired frames per second for the game loop
- * @param {Function} gameLoopFunction - Function containing the game logic
- * @returns {number} - Returns the interval ID for the game loop
+ * @param {Function} gameLoopFunction - Function containing the game logic and rendering logic
  */
 const createConstantFPSGameLoop = (desiredFPS, gameLoopFunction) => {
-  var interval = 1000 / desiredFPS;
+  const FRAME_TIME = 1000 / desiredFPS; // Target time per frame in milliseconds
+  let lastFrameTime = performance.now(); // Initialize last frame time
+  let accumulatedTime = 0; // Time accumulator for managing the updates
 
-  return setInterval(gameLoopFunction, interval);
-}
+  const loop = (currentTime) => {
+    const elapsedTime = currentTime - lastFrameTime; // Time since last frame
+    lastFrameTime = currentTime;
+
+    // Accumulate the elapsed time
+    accumulatedTime += elapsedTime;
+
+    // Update the game logic based on the fixed time step
+    while (accumulatedTime >= FRAME_TIME) {
+      gameLoopFunction(); // Call the game logic (update + render)
+      accumulatedTime -= FRAME_TIME; // Decrease the accumulated time
+    }
+
+    // Request the next frame
+    requestAnimationFrame(loop);
+  };
+
+  // Start the game loop
+  requestAnimationFrame(loop);
+};
 
 export { createConstantFPSGameLoop };
