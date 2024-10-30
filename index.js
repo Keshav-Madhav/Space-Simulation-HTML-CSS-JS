@@ -2,9 +2,9 @@ import { bodyCollide } from "./functions/collisionAndMassTransfer.js";
 import { drawFPS } from "./functions/fpsDisplay.js";
 import { createConstantFPSGameLoop } from "./functions/createConstantFPSGameLoop.js";
 import { getDeltaTime } from "./functions/deltaTime.js";
-import { CelestialBody } from "./classes/CelestialBodyClass.js";
 import { BackgroundStar } from "./classes/BackgroundStarsClass.js";
-import { screenToWorldCoordinates, zoomIn, zoomOut, hexToRGB, resizeCanvas } from "./functions/utils.js";
+import { TrailManager } from "./classes/TrailManagerClass.js";
+import { zoomIn, zoomOut, hexToRGB, resizeCanvas } from "./functions/utils.js";
 import { spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, setupThreeBodyProblem } from "./functions/spawnTemplates.js";
 import { smoothFollow, updateCameraToFollowCenterOfMass } from "./functions/cameraHelper.js";
 import { prompt, showPrompts } from "./functions/showPrompts.js";
@@ -125,9 +125,8 @@ showTrails.addEventListener('change', function() {
   if(!showTrailsIsON){
     trailCanvas.style.display = 'none';
     trailctx.clearRect(0, 0, canvas.width, canvas.height);
-    celestialBodies.forEach(body => {
-      body.trajectory = [];
-    });
+    
+    trailManager.clearAllTrails();
   } else {
     trailCanvas.style.display = 'block';
   }
@@ -277,6 +276,9 @@ canvas.addEventListener('wheel', function(event) {
   }
 });
 
+// Create a new trail manager instance
+const trailManager = new TrailManager({ context: trailctx });
+
 function draw() {
   const deltaTime = getDeltaTime();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -304,13 +306,11 @@ function draw() {
   ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.scale(zoomFactor, zoomFactor);
   ctx.translate(-canvas.width / 2, -canvas.height / 2);
-  // ctx.translate(-camera.x, -camera.y);
 
   trailctx.save();
   trailctx.translate(canvas.width / 2, canvas.height / 2);
   trailctx.scale(zoomFactor, zoomFactor);
   trailctx.translate(-canvas.width / 2, -canvas.height / 2);
-  // trailctx.translate(-camera.x, -camera.y); 
 
   if(showStarsIsON){
     if (camera.prevX !== camera.x || camera.prevY !== camera.y) {
@@ -322,9 +322,16 @@ function draw() {
   }
 
   celestialBodies.forEach(body => {
+    if (showTrailsIsON){
+      trailManager.initializeTrail(body.id, body.trailColor);
+      trailManager.updateTrail(body.id, body.x, body.y, body.dx, body.dy);
+    }
+    
     body.draw();
     body.update();
   });
+
+  trailManager.drawTrails(camera);
 
   if (startDrag && endDrag) {
     drawTrajectory(startDrag.x, startDrag.y, endDrag.x, endDrag.y);
@@ -420,6 +427,10 @@ function resetEverything() {
   createBackgroundStars(1500);
   starCtx.clearRect(0, 0, canvas.width, canvas.height);
   drawBackgroundStars();
+
+  // Reset the trail canvas and clear all trails
+  trailctx.clearRect(0, 0, canvas.width, canvas.height);
+  trailManager.clearAllTrails();
 }
 
 function playInstructions() {

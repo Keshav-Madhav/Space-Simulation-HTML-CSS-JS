@@ -68,13 +68,14 @@ class CelestialBody {
     this.dy = dy;
     this.color = `rgba(${color.r}, ${color.g}, ${color.b}, 1)`;
     this.trailColor = trailColor || `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`;
-    this.textColor = textColor || `rgba(${color.r}, ${color.g}, ${color.b}, 0.9)`
+    this.textColor = textColor || `rgba(${color.r}, ${color.g}, ${color.b}, 0.9)`;
     this.elasticity = 0.6;
-    this.trajectory = [];
-    this.maxTrajectoryPoints = 3000;
     this.label = label;
     this.prevX = x;
     this.prevY = y;
+    
+    // Generate a unique ID for this body
+    this.id = crypto.randomUUID();
   }
 
   /**
@@ -87,7 +88,6 @@ class CelestialBody {
     ctx.fillStyle = this.color;
     ctx.fill();
     
-    // Draw a stroke around the black hole
     if (this.color === 'rgba(0, 0, 0, 1)') {
       ctx.strokeStyle = this.trailColor;
       ctx.lineWidth = 2;
@@ -95,14 +95,10 @@ class CelestialBody {
     }
   
     ctx.closePath();
-    if(showTrailsIsON) {
-      this.drawTrajectory();
-      this.updateTrajectory();
-    }
   
     if (showLabelsIsON) {
       ctx.fillStyle = this.textColor;
-      const fontSize = zoomFactor > 0.5 ? 14 / zoomFactor : 14 * 0.6/ zoomFactor
+      const fontSize = zoomFactor > 0.5 ? 14 / zoomFactor : 14 * 0.6/ zoomFactor;
       ctx.font = `${fontSize}px Arial`;
       const textWidth = ctx.measureText(this.label).width;
       ctx.fillText(this.label, this.x - camera.x - textWidth / 2, this.y - camera.y + this.radius + (16/zoomFactor));
@@ -118,7 +114,7 @@ class CelestialBody {
     
       // Display the magnitude of velocity
       const velocityTextWidth = ctx.measureText(velocityUnit === 'm/s' ? velocityMPS : velocityKMPS).width;
-      const fontSize = zoomFactor > 0.5 ? 12 / zoomFactor : 12 * 0.6/ zoomFactor
+      const fontSize = zoomFactor > 0.5 ? 12 / zoomFactor : 12 * 0.6/ zoomFactor;
       ctx.font = `${fontSize}px Arial`;
       ctx.fillStyle = this.textColor;
       ctx.fillText(
@@ -131,38 +127,6 @@ class CelestialBody {
     // Update previous position for the next frame
     this.prevX = this.x;
     this.prevY = this.y;
-  }
-  
-  /**
-   * Updates the trajectory array with current position.
-   */
-  updateTrajectory() {
-    this.trajectory.push({ x: this.x, y: this.y });
-  }
-
-  /**
-   * Draws the trajectory path on the trail canvas.
-   */
-  drawTrajectory() {
-    if (this.dx !== 0 || this.dy !== 0) {
-      trailctx.setLineDash([6, 2]);
-      trailctx.strokeStyle = this.trailColor;
-      trailctx.beginPath();
-
-      this.trajectory.forEach((point, index) => {
-        const cameraAdjustedX = point.x - camera.x;
-        const cameraAdjustedY = point.y - camera.y;
-
-        if (index === 0) {
-          trailctx.moveTo(cameraAdjustedX, cameraAdjustedY);
-        } else {
-          trailctx.lineTo(cameraAdjustedX, cameraAdjustedY);
-        }
-      });
-
-      trailctx.stroke();
-      trailctx.setLineDash([]);
-    }
   }
 
   /**
