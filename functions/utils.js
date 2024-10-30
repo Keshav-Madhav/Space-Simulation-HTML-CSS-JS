@@ -56,12 +56,12 @@ const hexToRGB = (hex) => {
  * Resize the canvas to match the window size.
  */
 function resizeCanvas() {
-  canvas.width = window.innerWidth - 10;
-  canvas.height = window.innerHeight - 5;
-  starCanvas.width = window.innerWidth - 10;
-  starCanvas.height = window.innerHeight - 5;
-  trailCanvas.width = window.innerWidth - 10;
-  trailCanvas.height = window.innerHeight - 5;
+  canvas.width = window.innerWidth - 1;
+  canvas.height = window.innerHeight - 1;
+  starCanvas.width = window.innerWidth - 1;
+  starCanvas.height = window.innerHeight - 1;
+  trailCanvas.width = window.innerWidth - 1;
+  trailCanvas.height = window.innerHeight - 1;
 }
 
 

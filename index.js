@@ -282,7 +282,6 @@ const trailManager = new TrailManager({ context: trailctx });
 function draw() {
   const deltaTime = getDeltaTime();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  trailctx.clearRect(0, 0, canvas.width, canvas.height);  
 
   if (keys.ArrowUp) camera.y -= camSpeed;
   if (keys.ArrowDown) camera.y += camSpeed;
@@ -306,11 +305,6 @@ function draw() {
   ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.scale(zoomFactor, zoomFactor);
   ctx.translate(-canvas.width / 2, -canvas.height / 2);
-
-  trailctx.save();
-  trailctx.translate(canvas.width / 2, canvas.height / 2);
-  trailctx.scale(zoomFactor, zoomFactor);
-  trailctx.translate(-canvas.width / 2, -canvas.height / 2);
 
   if(showStarsIsON){
     if (camera.prevX !== camera.x || camera.prevY !== camera.y) {
@@ -352,7 +346,6 @@ function draw() {
   }
 
   ctx.restore();
-  trailctx.restore();
 
   // Update last camera position
   camera.prevX = camera.x;

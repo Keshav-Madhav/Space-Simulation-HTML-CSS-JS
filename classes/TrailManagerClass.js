@@ -8,7 +8,10 @@ class TrailManager {
    */
   constructor({ context }) {
     this.context = context;
-    // Map to store trails for each body
+    
+    /**
+     * @type {Map<string, {points: {x: number, y: number}[], color: string}>} trails
+     */
     this.trails = new Map();
   }
 
@@ -16,14 +19,12 @@ class TrailManager {
    * Initializes or gets a trail for a celestial body
    * @param {string} bodyId Unique identifier for the body
    * @param {string} trailColor Color of the trail
-   * @param {number} maxPoints Maximum points in trail
    */
-  initializeTrail(bodyId, trailColor, maxPoints = 3000) {
+  initializeTrail(bodyId, trailColor) {
     if (!this.trails.has(bodyId)) {
       this.trails.set(bodyId, {
         points: [],
-        color: trailColor,
-        maxPoints
+        color: trailColor
       });
     }
   }
@@ -43,9 +44,6 @@ class TrailManager {
     // Only update if the body is moving
     if (dx !== 0 || dy !== 0) {
       trail.points.push({ x, y });
-      if (trail.points.length > trail.maxPoints) {
-        trail.points.shift();
-      }
     }
   }
 
@@ -54,6 +52,13 @@ class TrailManager {
    * @param {Object} camera Camera position
    */
   drawTrails(camera) {
+    trailctx.clearRect(0, 0, canvas.width, canvas.height);  
+    
+    trailctx.save();
+    trailctx.translate(canvas.width / 2, canvas.height / 2);
+    trailctx.scale(zoomFactor, zoomFactor);
+    trailctx.translate(-canvas.width / 2, -canvas.height / 2);
+
     if (!showTrailsIsON) return;
 
     this.trails.forEach(trail => {
@@ -77,6 +82,9 @@ class TrailManager {
       this.context.stroke();
       this.context.setLineDash([]);
     });
+
+    
+    trailctx.restore();
   }
 
   /**
