@@ -122,4 +122,149 @@ function spawnPlanetWithLightSpeed() {
   celestialBodies.push(newPlanet);
 }
 
-export { setupThreeBodyProblem, spawnPlanetsNearMouse, spawnPlanetWithLightSpeed };
+/**
+ * Spawns a solar system with the Sun and all eight planets.
+ */
+const spawnSolarSystem = () => {
+  celestialBodies.push(
+    new CelestialBody({
+      bodyType: 'star',
+      radius: 100,
+      density: 15,
+      x: -6000,
+      y: 0,
+      dx: 0,
+      dy: 0,
+      color: celestialBodyValues.star.color,
+      label: 'Sun'
+    })
+  );
+
+  celestialBodies.push(
+    new CelestialBody({
+      bodyType: 'planet',
+      radius: 2,
+      density: 0.5,
+      x: -4500,
+      y: 0,
+      dx: 0,
+      dy: -60,
+      color:  { r: 211, g: 211, b: 211 },
+      label: 'Mercury'
+    })
+  );
+
+  celestialBodies.push(
+    new CelestialBody({
+      bodyType: 'planet',
+      radius: 4,
+      density: 1.5,
+      x: -2500,
+      y: 0,
+      dx: 0,
+      dy: -40,
+      color:  { r: 255, g: 174, b: 66 },
+      label: 'Venus'
+    })
+  );
+
+  celestialBodies.push(
+    new CelestialBody({
+      bodyType: 'planet',
+      radius: 4.5,
+      density: 1.5,
+      x: -0,
+      y: 0,
+      dx: 0,
+      dy: -30,
+      color:  { r: 83, g: 196, b: 255 },
+      label: 'Earth'
+    })
+  );
+
+  celestialBodies.push(
+    new CelestialBody({
+      bodyType: 'planet',
+      radius: 5,
+      density: 2,
+      x: 3000,
+      y: 0,
+      dx: 0,
+      dy: -24,
+      color:  { r: 193, g: 68, b: 14 },
+      label: 'Mars'
+    })
+  );
+
+  celestialBodies.push(
+    new CelestialBody({
+      bodyType: 'planet',
+      radius: 40,
+      density: 0.1,
+      x: 9000,
+      y: 0,
+      dx: 0,
+      dy: -20,
+      color:  { r: 245, g: 245, b: 220 },
+      label: 'Jupiter'
+    })
+  );
+
+  celestialBodies.push(
+    new CelestialBody({
+      bodyType: 'planet',
+      radius: 25,
+      density: 0.5,
+      x: 18000,
+      y: 0,
+      dx: 0,
+      dy: -15,
+      color:  { r: 255, g: 198, b: 137 },
+      label: 'Saturn'
+    })
+  );
+
+  celestialBodies.push(
+    new CelestialBody({
+      bodyType: 'planet',
+      radius: 20,
+      density: 1,
+      x: 30000,
+      y: 0,
+      dx: 0,
+      dy: -12,
+      color:  { r: 172, g: 229, b: 238 },
+      label: 'Uranus'
+    })
+  );
+
+  celestialBodies.push(
+    new CelestialBody({
+      bodyType: 'planet',
+      radius: 20,
+      density: 1,
+      x: 42000,
+      y: 0,
+      dx: 0,
+      dy: -10,
+      color:  { r: 0, g: 147, b: 125 },
+      label: 'Neptune'
+    })
+  );
+
+  celestialBodies.push(
+    new CelestialBody({
+      bodyType: 'planet',
+      radius: 1,
+      density: 1,
+      x: 54000,
+      y: 0,
+      dx: 0,
+      dy: -10,
+      color:  { r: 144, g: 144, b: 144 },
+      label: 'Pluto'
+    })
+  );
+}
+
+export { setupThreeBodyProblem, spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, spawnSolarSystem };

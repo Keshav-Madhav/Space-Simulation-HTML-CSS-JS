@@ -27,8 +27,8 @@ const worldToScreenCoordinates = (worldX, worldY) => {
  */
 const zoomIn = () => {
   // Apply exponential zoom for gradual zooming effect
-  zoomFactor = Math.max(Math.min(zoomFactor * (1 + zoomSpeed), 6), 0.1);
-  zoomFactor = parseFloat(zoomFactor.toFixed(2));
+  zoomFactor = Math.max(Math.min(zoomFactor * (1 + zoomSpeed), 6), 0.01);
+  zoomFactor = parseFloat(zoomFactor.toFixed(3));
 }
 
 /**
@@ -36,8 +36,8 @@ const zoomIn = () => {
  */
 const zoomOut = () => {
   // Apply exponential zoom for gradual zooming effect
-  zoomFactor = Math.max(Math.min(zoomFactor * (1 - zoomSpeed), 6), 0.1);
-  zoomFactor = parseFloat(zoomFactor.toFixed(2));
+  zoomFactor = Math.max(Math.min(zoomFactor * (1 - zoomSpeed), 6), 0.01);
+  zoomFactor = parseFloat(zoomFactor.toFixed(3));
 }
 
 /**

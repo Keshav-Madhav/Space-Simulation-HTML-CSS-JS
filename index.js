@@ -5,7 +5,7 @@ import { getDeltaTime } from "./functions/deltaTime.js";
 import { BackgroundStar } from "./classes/BackgroundStarsClass.js";
 import { TrailManager } from "./classes/TrailManagerClass.js";
 import { zoomIn, zoomOut, hexToRGB, resizeCanvas } from "./functions/utils.js";
-import { spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, setupThreeBodyProblem } from "./functions/spawnTemplates.js";
+import { spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, setupThreeBodyProblem, spawnSolarSystem } from "./functions/spawnTemplates.js";
 import { smoothFollow, updateCameraToFollowCenterOfMass } from "./functions/cameraHelper.js";
 import { prompt, showPrompts, clearPrompts } from "./functions/showPrompts.js";
 import { startDragHandler, drawTrajectory } from "./functions/dragListeners.js";
@@ -116,6 +116,16 @@ lightSpeedP.addEventListener('click', function() {
   followCam.checked = true;
 });
 
+solarSystem.addEventListener('click', function() {
+  celestialBodies.length = 0;
+  zoomFactor = 0.05;
+  velocityUnit = 'km/s';
+  showTrailsIsON = showTrails.checked = false;
+  showStarsIsON = showStars.checked = false;
+
+  spawnSolarSystem();
+});
+
 reset.addEventListener('click', function() {
   resetEverything();
 });
@@ -129,6 +139,7 @@ showTrails.addEventListener('change', function() {
     trailManager.clearAllTrails();
   } else {
     trailCanvas.style.display = 'block';
+    trailctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 });
 
@@ -152,6 +163,7 @@ showStars.addEventListener('change', function() {
   showStarsIsON = this.checked;
   if(showStarsIsON){
     starCanvas.style.display = 'block';
+    backgroundStars.length = 0;
     createBackgroundStars(1500);
     drawBackgroundStars();
   } else {
@@ -164,8 +176,53 @@ showStars.addEventListener('change', function() {
 canvas.addEventListener('mousedown', startDragHandler);
 
 document.addEventListener('keydown', function (event) {
-  if (event.key === '1' || event.key === '2' || event.key === '3') {
+  if (keys.hasOwnProperty(event.key)) {
+    keys[event.key] = true;
+  } 
+  if (event.key === 'w'){
+    keys.ArrowUp = true;
+  } 
+  if (event.key === 's'){
+    keys.ArrowDown = true;
+  }
+  if (event.key === 'a'){
+    keys.ArrowLeft = true;
+  }
+  if (event.key === 'd'){
+    keys.ArrowRight = true;
+  }
+
+  if (event.code === 'Backspace') {
+    cameraFollowingIndex = -1;
+    cameraFollow = true;
+  }
+  if (event.key === 'Shift') {
+    camSpeed = 20;
+    camSpeedElement.value = 20;
+  }
+  if(event.key === 'Control'){
+    camSpeed = 1;
+    camSpeedElement.value = 1;
+  }
+
+  if(event.key === 'p'){
+    isPaused = !isPaused;
+    clearPrompts();
+    prompt({
+      text: isPaused ? 'Simulation Paused' : 'Simulation Resumed',
+      y: canvas.height - 20,
+      vel: 0,
+      time: isPaused ? 0 : 0.4,
+      textSize: 16,
+      isOverRide: true
+    });
+  }
+
+  if (event.key === '0' || event.key === '1' || event.key === '2' || event.key === '3') {
     switch (event.key) {
+      case '0':
+        selectedBody = '';
+        break;
       case '1':
         selectedBody = 'Planet';
         break;
@@ -230,37 +287,6 @@ document.addEventListener('keydown', function (event) {
     clearPrompts();
   }
 });
-
-window.addEventListener('keydown', function(e) {
-  if (keys.hasOwnProperty(e.key)) {
-    keys[e.key] = true;
-  } 
-  if (e.key === 'w'){
-    keys.ArrowUp = true;
-  } 
-  if (e.key === 's'){
-    keys.ArrowDown = true;
-  }
-  if (e.key === 'a'){
-    keys.ArrowLeft = true;
-  }
-  if (e.key === 'd'){
-    keys.ArrowRight = true;
-  }
-
-  if (e.code === 'Backspace') {
-    cameraFollowingIndex = -1;
-    cameraFollow = true;
-  }
-  if (e.key === 'Shift') {
-    camSpeed = 20;
-    camSpeedElement.value = 20;
-  }
-  if(e.key === 'Control'){
-    camSpeed = 1;
-    camSpeedElement.value = 1;
-  }
-}); 
 
 window.addEventListener('keyup', function(e) {
   if (keys.hasOwnProperty(e.key)) {
@@ -344,10 +370,10 @@ function draw() {
     }
     
     body.draw();
-    body.update();
+    if(!isPaused) body.update();
   });
 
-  trailManager.drawTrails(camera);
+  showTrailsIsON && trailManager.drawTrails(camera);
 
   if (startDrag && endDrag) {
     drawTrajectory(startDrag.x, startDrag.y, endDrag.x, endDrag.y);

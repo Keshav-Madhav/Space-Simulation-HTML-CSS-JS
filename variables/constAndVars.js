@@ -15,6 +15,7 @@ let zoomSpeed = 0.1;
 let isCameraLockedOn = false;
 let smoothedSpeed = 0;
 let selectedBody = '';
+let isPaused = false;
 
 const cameraMoveSpeed = 1;
 
@@ -75,7 +76,7 @@ const keys = {
 const celestialBodyValues = {
   planet: {
     radius: 4,
-    density: 0.5,
+    density: 1.5,
     color: { r: 255, g: 255, b: 255 }
   },
   star: {
@@ -85,7 +86,7 @@ const celestialBodyValues = {
   },
   blackHole: {
     radius: 15,
-    density: 120,
+    density: 360,
     color: { r: 0, g: 0, b: 0 }
   }
 };

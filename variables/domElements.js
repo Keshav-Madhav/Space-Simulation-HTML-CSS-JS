@@ -27,6 +27,7 @@ const veloctyUnit = document.getElementById('velocityUnit');
 const threeBody = document.getElementById('threeBody');
 const cluster = document.getElementById('cluster');
 const lightSpeedP = document.getElementById('lightSpeedP');
+const solarSystem = document.getElementById('solarSystem');
 const reset = document.getElementById('reset');
 
 /** @type {HTMLCanvasElement} */
