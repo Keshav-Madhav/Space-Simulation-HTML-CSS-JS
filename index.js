@@ -7,7 +7,7 @@ import { TrailManager } from "./classes/TrailManagerClass.js";
 import { zoomIn, zoomOut, hexToRGB, resizeCanvas } from "./functions/utils.js";
 import { spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, setupThreeBodyProblem } from "./functions/spawnTemplates.js";
 import { smoothFollow, updateCameraToFollowCenterOfMass } from "./functions/cameraHelper.js";
-import { prompt, showPrompts } from "./functions/showPrompts.js";
+import { prompt, showPrompts, clearPrompts } from "./functions/showPrompts.js";
 import { startDragHandler, drawTrajectory } from "./functions/dragListeners.js";
 
 //resize canvas
@@ -161,6 +161,8 @@ showStars.addEventListener('change', function() {
   }
 });
 
+canvas.addEventListener('mousedown', startDragHandler);
+
 document.addEventListener('keydown', function (event) {
   if (event.key === '1' || event.key === '2' || event.key === '3') {
     switch (event.key) {
@@ -176,7 +178,6 @@ document.addEventListener('keydown', function (event) {
     }
     startDrag = null;
     endDrag = null;
-    canvas.addEventListener('mousedown', startDragHandler);
   }
 
   // Handle cycling through celestial bodies using 'n' and 'm'
@@ -186,7 +187,19 @@ document.addEventListener('keydown', function (event) {
   }
 
   if (event.key === 'c') {
-    cameraFollow = !cameraFollow;
+    
+    if(celestialBodies.length === 0){
+      prompt({
+        text: "No bodies to follow",
+        y: canvas.height - 20,
+        vel: 20,
+        time: 0.1,
+        textSize: 16,
+        isOverRide: true
+      });
+    } else {
+      cameraFollow = !cameraFollow;
+    }
   }
 
   if (event.key === 'r') {
@@ -206,6 +219,15 @@ document.addEventListener('keydown', function (event) {
 
   if(event.key === 'x'){
     collideIsON = !collideIsON;
+  }
+
+  if(event.key === 'l'){
+    clearPrompts();
+    playInstructions();
+  }
+
+  if(event.key === '.'){
+    clearPrompts();
   }
 });
 
@@ -461,6 +483,16 @@ function playInstructions() {
     vel: 140,
     time: 0.2
   });
+
+  prompt({
+    text: "(L) to replay instructions. (.) to clear prompts",
+    y: 60,
+    x: 10,
+    vel: 0,
+    time: 0.05,
+    textSize: 16,
+    isOverRide: true,
+  })
 }
 
 playInstructions();

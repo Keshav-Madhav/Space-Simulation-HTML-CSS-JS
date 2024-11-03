@@ -1,11 +1,62 @@
 import { screenToWorldCoordinates } from "./utils.js";
 import { CelestialBody } from "../classes/CelestialBodyClass.js";
+import { prompt } from "./showPrompts.js";
+
+let isShiftPressed = false;
+let isFirstDrag = true;
+
+// Add shift key listeners
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Shift') isShiftPressed = true;
+});
+
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'Shift') isShiftPressed = false;
+});
 
 function startDragHandler(e) {
   e.preventDefault();
-  startDrag  = screenToWorldCoordinates(e.clientX, e.clientY);
+  if(selectedBody !== '') {
+    startDrag = screenToWorldCoordinates(e.clientX, e.clientY);
+  } else {
+    if (isFirstDrag) {
+      prompt({
+        text: 'Press (c) to camera follow a celestial body.',
+        vel: 20,
+        time: 0.1,
+        y: canvas.height - 20,
+        textSize: 20,
+        isOverRide: true
+      });
+      isFirstDrag = false;
+    }
+    camera.lastMouseX = e.clientX;
+    camera.lastMouseY = e.clientY;
+  }
   canvas.addEventListener('mousemove', dragHandler);
   canvas.addEventListener('mouseup', endDragHandler);
+}
+
+function dragHandler(e) {
+  e.preventDefault();
+  if(selectedBody !== '') {
+    endDrag = screenToWorldCoordinates(e.clientX, e.clientY);
+  } else {
+    // Calculate the difference from the last mouse position
+    const deltaX = e.clientX - camera.lastMouseX;
+    const deltaY = e.clientY - camera.lastMouseY;
+    
+    // Apply speed multiplier if shift is pressed
+    const speedMultiplier = isShiftPressed ? 3 : 1;
+    
+    // Update camera position with speed multiplier
+    camera.x -= deltaX * speedMultiplier;
+    camera.y -= deltaY * speedMultiplier;
+    
+    // Update last mouse position for next frame
+    camera.lastMouseX = e.clientX;
+    camera.lastMouseY = e.clientY;
+  }
 }
 
 function drawTrajectory(startX, startY, endX, endY) {
@@ -21,11 +72,6 @@ function drawTrajectory(startX, startY, endX, endY) {
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
   ctx.stroke();
   ctx.setLineDash([]);
-}
-
-function dragHandler(e) {
-  e.preventDefault();
-  endDrag = screenToWorldCoordinates(e.clientX, e.clientY);
 }
 
 function endDragHandler(e) {
@@ -76,7 +122,7 @@ function endDragHandler(e) {
           label: 'Star ' + (celestialBodies.length + 1)
         })
       );
-    }else if (selectedBody === 'Black Hole') {
+    } else if (selectedBody === 'Black Hole') {
       celestialBodies.push(
         new CelestialBody({
           bodyType: 'blackHole',
@@ -96,12 +142,10 @@ function endDragHandler(e) {
 
     startDrag = null;
     endDrag = null;
-
-    canvas.removeEventListener('mousemove', dragHandler);
-    canvas.removeEventListener('mouseup', endDragHandler);
-    canvas.removeEventListener('mousedown', startDragHandler);
     selectedBody = '';
   }
+  canvas.removeEventListener('mousemove', dragHandler);
+  canvas.removeEventListener('mouseup', endDragHandler);
 }
 
 export { startDragHandler, dragHandler, endDragHandler, drawTrajectory };

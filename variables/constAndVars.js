@@ -30,12 +30,16 @@ const celestialBodies = [];
  * @property {number} y - Current y position of the camera
  * @property {number} prevX - Previous x position of the camera
  * @property {number} prevY - Previous y position of the camera
+ * @property {number} lastMouseX - Last recorded x position of the mouse
+ * @property {number} lastMouseY - Last recorded y position of the mouse
  */
 const camera = {
   x: 0,
   y: 0,
   prevX: 0,
-  prevY: 0
+  prevY: 0,
+  lastMouseX: 0,
+  lastMouseY: 0
 };
 
 /** 
