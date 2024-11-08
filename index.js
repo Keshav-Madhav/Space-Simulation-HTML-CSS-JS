@@ -193,8 +193,22 @@ document.addEventListener('keydown', function (event) {
   }
 
   if (event.code === 'Backspace') {
-    cameraFollowingIndex = -1;
-    cameraFollow = true;
+    if(cameraFollowingIndex !== -1 && celestialBodies.length > 0 && cameraFollow){
+      const removedBody = celestialBodies.splice(cameraFollowingIndex, 1);
+      trailManager.clearTrail(removedBody[0].id);
+      cameraFollowingIndex = 0;
+      cameraFollow = false;
+      followCam.checked = false;
+    } else {
+      prompt({
+        text: "No body to delete",
+        y: canvas.height - 20,
+        vel: 20,
+        time: 0.1,
+        textSize: 16,
+        isOverRide: true
+      });
+    }
   }
   if (event.key === 'Shift') {
     camSpeed = 20;
@@ -331,10 +345,10 @@ function draw() {
   const deltaTime = getDeltaTime();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  if (keys.ArrowUp) camera.y -= camSpeed;
-  if (keys.ArrowDown) camera.y += camSpeed;
-  if (keys.ArrowLeft) camera.x -= camSpeed;
-  if (keys.ArrowRight) camera.x += camSpeed;
+  if (keys.ArrowUp) camera.y -= (camSpeed / Math.sqrt(zoomFactor));
+  if (keys.ArrowDown) camera.y += (camSpeed / Math.sqrt(zoomFactor));
+  if (keys.ArrowLeft) camera.x -= (camSpeed / Math.sqrt(zoomFactor));
+  if (keys.ArrowRight) camera.x += (camSpeed / Math.sqrt(zoomFactor));
 
   if (celestialBodies.length > 0 && cameraFollow) {
     if (cameraFollowingIndex === -1) {
@@ -417,7 +431,7 @@ function updateUI(deltaTime) {
     ctx.fillText(text, canvas.width - ctx.measureText(text).width - 10, canvas.height - 20);
   }
 
-  if(cameraFollow && (cameraFollowingIndex !== 0 || cameraFollowingIndex < -1)){
+  if(cameraFollow && cameraFollowingIndex > -1){
     const text = cameraFollowingIndex === -1 ? 'Following Center of Mass' : `Following: ${celestialBodies[cameraFollowingIndex].label}`
     ctx.fillText(text, canvas.width - ctx.measureText(text).width - 10, canvas.height - 6);
   }

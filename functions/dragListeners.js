@@ -50,8 +50,8 @@ function dragHandler(e) {
     const speedMultiplier = isShiftPressed ? 3 : 1;
     
     // Update camera position with speed multiplier
-    camera.x -= deltaX * speedMultiplier;
-    camera.y -= deltaY * speedMultiplier;
+    camera.x -= (deltaX * speedMultiplier)/ Math.sqrt(zoomFactor);
+    camera.y -= (deltaY * speedMultiplier) / Math.sqrt(zoomFactor);
     
     // Update last mouse position for next frame
     camera.lastMouseX = e.clientX;
