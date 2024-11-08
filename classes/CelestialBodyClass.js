@@ -159,7 +159,10 @@ class CelestialBody {
     const distance = Math.sqrt(distanceSquared);
 
     // Avoid division by zero and very close interactions
-    if (distance < 1) return { fx: 0, fy: 0 };
+    if (distance < 1) {
+      // Return zero acceleration if the bodies are too close
+      return { ax: 0, ay: 0 };
+    }
 
     const force = (G * this.weight * otherBody.weight) / distanceSquared;
 

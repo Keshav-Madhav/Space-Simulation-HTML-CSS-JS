@@ -267,4 +267,59 @@ const spawnSolarSystem = () => {
   );
 }
 
-export { setupThreeBodyProblem, spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, spawnSolarSystem };
+function spawnGalaxy() {
+  // Define the center of the galaxy
+  const centerX = camera.x + canvas.width / 2;
+  const centerY = camera.y + canvas.height / 2;
+
+  // Spawn the black hole
+  const blackHole = new CelestialBody({
+    bodyType: 'blackHole',
+    radius: 17,
+    density: 100,
+    x: centerX,
+    y: centerY,
+    dx: 0,
+    dy: 0,
+    color: celestialBodyValues.blackHole.color,
+    trailColor: 'rgba(100, 100, 100, 0.5)',
+    textColor: 'rgba(255, 255, 255, 0.9)',
+    label: 'Black Hole'
+  });
+  celestialBodies.push(blackHole);
+
+  // Spawn 100-200 planets orbiting the black hole
+  const numPlanets = Math.floor(Math.random() * 10) + 20;
+  const baseDistance = 1000; // 1 unit = 1/10,000 scale of the galaxy
+
+  for (let i = 0; i < numPlanets; i++) {
+    const angle = Math.random() * 2 * Math.PI;
+    const distance = baseDistance + Math.random() * 500; // Random distance from 1000 to 1500
+    const x = centerX + distance * Math.cos(angle);
+    const y = centerY + distance * Math.sin(angle);
+
+    const speed = 10 + Math.random() * 3; // Random speed between 10 and 15
+    const dx = -speed * Math.sin(angle);
+    const dy = speed * Math.cos(angle);
+
+    const newPlanet = new CelestialBody({
+      bodyType: 'planet',
+      radius: 4 + Math.random() * 2, // Random radius between 4 and 6
+      density: 0.5 + Math.random() * 0.5, // Random density between 0.5 and 1
+      x: x,
+      y: y,
+      dx: dx,
+      dy: dy,
+      color: {
+        r: Math.floor(Math.random() * 256),
+        g: Math.floor(Math.random() * 256),
+        b: Math.floor(Math.random() * 256)
+      },
+      label: `Planet ${i + 1}`
+    });
+
+    celestialBodies.push(newPlanet);
+  }
+}
+
+export { setupThreeBodyProblem, spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, spawnSolarSystem, spawnGalaxy };

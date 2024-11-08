@@ -28,6 +28,7 @@ const threeBody = document.getElementById('threeBody');
 const cluster = document.getElementById('cluster');
 const lightSpeedP = document.getElementById('lightSpeedP');
 const solarSystem = document.getElementById('solarSystem');
+const galaxySpawn = document.getElementById('galaxySpawn');
 const reset = document.getElementById('reset');
 
 /** @type {HTMLCanvasElement} */

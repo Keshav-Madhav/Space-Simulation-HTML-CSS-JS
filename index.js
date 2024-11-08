@@ -5,7 +5,7 @@ import { getDeltaTime } from "./functions/deltaTime.js";
 import { BackgroundStar } from "./classes/BackgroundStarsClass.js";
 import { TrailManager } from "./classes/TrailManagerClass.js";
 import { zoomIn, zoomOut, hexToRGB, resizeCanvas } from "./functions/utils.js";
-import { spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, setupThreeBodyProblem, spawnSolarSystem } from "./functions/spawnTemplates.js";
+import { spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, setupThreeBodyProblem, spawnSolarSystem, spawnGalaxy } from "./functions/spawnTemplates.js";
 import { smoothFollow, updateCameraToFollowCenterOfMass } from "./functions/cameraHelper.js";
 import { prompt, showPrompts, clearPrompts } from "./functions/showPrompts.js";
 import { startDragHandler, drawTrajectory } from "./functions/dragListeners.js";
@@ -126,6 +126,16 @@ solarSystem.addEventListener('click', function() {
   spawnSolarSystem();
 });
 
+galaxySpawn.addEventListener('click', function() {
+  zoomFactor = 0.3;
+  showVelocitiesIsON = showVelocities.checked = false;
+  showStarsIsON = showStars.checked = false;
+  collideIsON = collision.checked = false;
+  celestialBodies.length = 0;
+
+  spawnGalaxy();
+});
+
 reset.addEventListener('click', function() {
   resetEverything();
 });
@@ -149,7 +159,7 @@ function createBackgroundStars(numStars) {
   }
 }
 
-createBackgroundStars(1500);
+createBackgroundStars(1000);
 
 // Modify the drawBackgroundStars function to apply distortion
 function drawBackgroundStars() {
@@ -300,6 +310,16 @@ document.addEventListener('keydown', function (event) {
   if(event.key === '.'){
     clearPrompts();
   }
+
+  if(event.key === 'g'){
+    zoomFactor = 0.3;
+    showVelocitiesIsON = showVelocities.checked = false;
+    showStarsIsON = showStars.checked = false;
+    collideIsON = collision.checked = false;
+    celestialBodies.length = 0;
+
+    spawnGalaxy();
+  }
 });
 
 window.addEventListener('keyup', function(e) {
@@ -431,8 +451,14 @@ function updateUI(deltaTime) {
     ctx.fillText(text, canvas.width - ctx.measureText(text).width - 10, canvas.height - 20);
   }
 
-  if(cameraFollow && cameraFollowingIndex > -1){
+  if(celestialBodies.length > 0){
+    const text = `Bodies: ${celestialBodies.length}`;
+    ctx.fillText(text, canvas.width - ctx.measureText(text).width - 10, window.innerHeight - 40);
+  }
+
+  if(cameraFollow){
     const text = cameraFollowingIndex === -1 ? 'Following Center of Mass' : `Following: ${celestialBodies[cameraFollowingIndex].label}`
+    ctx.fillStyle = cameraFollowingIndex === -1 ? 'white' : celestialBodies[cameraFollowingIndex].textColor;
     ctx.fillText(text, canvas.width - ctx.measureText(text).width - 10, canvas.height - 6);
   }
 
