@@ -288,7 +288,13 @@ document.addEventListener('keydown', function (event) {
   }
 
   if (event.key === 'k') {
-    spawnPlanetsNearMouse(15);
+    zoomFactor = 0.5;
+    collideIsON = collision.checked = false;
+    showTrailsIsON = showTrails.checked = false;
+    showStarsIsON = showStars.checked = false;
+    showVelocitiesIsON = showVelocities.checked = false;
+    // showLabelsIsON = showLabels.checked = false;
+    spawnPlanetsNearMouse(1500);
   }
 
   if (event.key === 't'){

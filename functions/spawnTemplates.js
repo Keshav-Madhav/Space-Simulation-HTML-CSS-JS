@@ -79,8 +79,8 @@ function spawnPlanetsNearMouse(numPlanets) {
   const worldCoords = screenToWorldCoordinates(canvas.width / 2, canvas.height / 2);
 
   for (let i = 0; i < numPlanets; i++) {
-    const randomXOffset = (Math.random() - 0.5) * 400 / zoomFactor;
-    const randomYOffset = (Math.random() - 0.5) * 400 / zoomFactor;
+    const randomXOffset = (Math.random() - 0.5) * 800 / zoomFactor;
+    const randomYOffset = (Math.random() - 0.5) * 600 / zoomFactor;
 
     const newPlanet = new CelestialBody({
       bodyType: 'planet',
