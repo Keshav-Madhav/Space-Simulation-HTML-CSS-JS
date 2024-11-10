@@ -322,4 +322,140 @@ function spawnGalaxy() {
   }
 }
 
-export { setupThreeBodyProblem, spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, spawnSolarSystem, spawnGalaxy };
+/**
+ * Spawns a binary star system with two stars orbiting each other in a stable, drift-free orbit,
+ * and adds five planets orbiting the binary star system.
+ */
+function spawnBinaryStarSystem() {
+  // Define the center of the binary star system
+  const centerX = camera.x + canvas.width / 2;
+  const centerY = camera.y + canvas.height / 2;
+
+  // Set distance between the stars and the center
+  const distanceFromCenter = 100;
+  const orbitalSpeed = 5.8;
+  
+  // Set the mass and radius of each star
+  const mass = 30;
+  const radius = 10;
+
+  // Define properties for each star
+  const starProperties = [
+    {
+      label: 'Star A',
+      color: { r: 255, g: 223, b: 0 }, // Yellow-ish color for Star A
+      angle: 0
+    },
+    {
+      label: 'Star B',
+      color: { r: 0, g: 191, b: 255 }, // Blue color for Star B
+      angle: Math.PI
+    }
+  ];
+
+  starProperties.forEach((star) => {
+    // Position each star at the specified distance from the center
+    const x = centerX + distanceFromCenter * Math.cos(star.angle);
+    const y = centerY + distanceFromCenter * Math.sin(star.angle);
+
+    // Set the velocity perpendicular to the radius (90 degrees offset)
+    const velocityAngle = star.angle + Math.PI / 2;
+    const dx = orbitalSpeed * Math.cos(velocityAngle);
+    const dy = orbitalSpeed * Math.sin(velocityAngle);
+
+    // Create and add the star to the celestialBodies array
+    celestialBodies.push(
+      new CelestialBody({
+        bodyType: 'star',
+        radius: radius,
+        density: mass,
+        x: x,
+        y: y,
+        dx: dx,
+        dy: dy,
+        color: star.color,
+        label: star.label
+      })
+    );
+  });
+
+  // Add five planets orbiting the binary star system
+  const numPlanets = 5;
+  const distance = 1500;
+  const speed = 4.1;
+
+  for (let i = 0; i < numPlanets; i++) {
+    const angle = (i * 2 * Math.PI) / numPlanets; // Evenly distribute planets around the center
+
+    // Calculate planet position
+    const planetX = centerX + distance * Math.cos(angle);
+    const planetY = centerY + distance * Math.sin(angle);
+
+    const velocityAngle = angle + Math.PI / 2;
+    const dx = speed * Math.cos(velocityAngle);
+    const dy = speed * Math.sin(velocityAngle);
+
+    // Create and add each planet to the celestialBodies array
+    celestialBodies.push(
+      new CelestialBody({
+        bodyType: 'planet',
+        radius: 5, // Increment radius for variety
+        density: 1,
+        x: planetX,
+        y: planetY,
+        dx: dx,
+        dy: dy,
+        color: { r: 100 + i * 30, g: 200 - i * 20, b: 255 - i * 10 }, // Vary color for each planet
+        label: `Planet ${i + 1}`
+      })
+    );
+  }
+}
+
+/**
+ * Spawns a meteor shower with small meteors moving toward the center of the screen.
+ * Each meteor has a random starting point off-screen, trajectory, speed, and color.
+ */
+function spawnMeteorShower() {
+  // Define the target point (center of the screen)
+  const targetX = camera.x + canvas.width / 2;
+  const targetY = camera.y + canvas.height / 2;
+
+  // Number of meteors in the shower
+  const numMeteors = 50;
+
+  for (let i = 0; i < numMeteors; i++) {
+    const startX = (Math.random() < 0.5 ? -100 : canvas.width + 100) + camera.x;
+    const startY = (Math.random() * canvas.height * 1.5) + camera.y;
+
+    // Calculate the angle and velocity to move toward the target point
+    const angle = Math.atan2(targetY - startY, targetX - startX);
+    const speed = 10 + Math.random() * 5; // Random speed between 10 and 15
+    const dx = speed * Math.cos(angle);
+    const dy = speed * Math.sin(angle);
+
+    // Random color for each meteor, giving a fiery appearance
+    const color = {
+      r: 255,
+      g: Math.floor(Math.random() * 156), // Random green component for variety
+      b: 0
+    };
+
+    // Create each meteor with a small radius and high density
+    const meteor = new CelestialBody({
+      bodyType: 'meteor',
+      radius: 1 + Math.random(), // Radius range 2-5
+      density: 2, // High density to simulate meteors
+      x: startX,
+      y: startY,
+      dx: dx,
+      dy: dy,
+      color: color,
+      label: `Meteor ${i + 1}`
+    });
+
+    celestialBodies.push(meteor);
+  }
+}
+
+export { setupThreeBodyProblem, spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, spawnSolarSystem, spawnGalaxy, spawnMeteorShower, spawnBinaryStarSystem };

@@ -69,7 +69,7 @@ class CelestialBody {
     this.color = `rgba(${color.r}, ${color.g}, ${color.b}, 1)`;
     this.trailColor = trailColor || `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`;
     this.textColor = textColor || `rgba(${color.r}, ${color.g}, ${color.b}, 0.9)`;
-    this.elasticity = 0.6;
+    this.elasticity = bodyType === 'planet' ? 0.8 : bodyType === 'star' ? 0.1 : bodyType === 'blackHole' ? 0.001 : 0.8;
     this.label = label;
     this.prevX = x;
     this.prevY = y;

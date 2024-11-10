@@ -5,7 +5,7 @@ import { getDeltaTime } from "./functions/deltaTime.js";
 import { BackgroundStar } from "./classes/BackgroundStarsClass.js";
 import { TrailManager } from "./classes/TrailManagerClass.js";
 import { zoomIn, zoomOut, hexToRGB, resizeCanvas } from "./functions/utils.js";
-import { spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, setupThreeBodyProblem, spawnSolarSystem, spawnGalaxy } from "./functions/spawnTemplates.js";
+import { spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, setupThreeBodyProblem, spawnSolarSystem, spawnGalaxy, spawnBinaryStarSystem, spawnMeteorShower } from "./functions/spawnTemplates.js";
 import { smoothFollow, updateCameraToFollowCenterOfMass } from "./functions/cameraHelper.js";
 import { prompt, showPrompts, clearPrompts } from "./functions/showPrompts.js";
 import { startDragHandler, drawTrajectory } from "./functions/dragListeners.js";
@@ -320,6 +320,18 @@ document.addEventListener('keydown', function (event) {
 
     spawnGalaxy();
   }
+
+  if(event.key === 'h'){
+    spawnSolarSystem();
+  }
+
+  if(event.key === 'b'){
+    spawnBinaryStarSystem();
+  }
+
+  if(event.key === 'm'){
+    spawnMeteorShower();
+  }
 });
 
 window.addEventListener('keyup', function(e) {
@@ -377,8 +389,8 @@ function draw() {
       const followedBody = celestialBodies[cameraFollowingIndex];
       const targetX = followedBody.x - canvas.width / 2;
       const targetY = followedBody.y - canvas.height / 2;
-      
-      smoothFollow(targetX, targetY, followedBody); // Smoothly follow the selected body
+
+      smoothFollow(targetX, targetY, followedBody);
     }
   }
 
@@ -388,7 +400,7 @@ function draw() {
   ctx.scale(zoomFactor, zoomFactor);
   ctx.translate(-canvas.width / 2, -canvas.height / 2);
 
-  if(showStarsIsON){
+  if(showStarsIsON) {
     if (camera.prevX !== camera.x || camera.prevY !== camera.y) {
       starCtx.clearRect(0, 0, canvas.width, canvas.height);
       drawBackgroundStars();
@@ -397,34 +409,39 @@ function draw() {
     starCtx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
-  celestialBodies.forEach(body => {
-    if (showTrailsIsON){
+  for (let i = 0; i < celestialBodies.length; i++) {
+    const body = celestialBodies[i];
+
+    // Handle trails
+    if (showTrailsIsON) {
       trailManager.initializeTrail(body.id, body.trailColor);
       trailManager.updateTrail(body.id, body.x, body.y, body.dx, body.dy);
     }
-    
-    body.draw();
-    if(!isPaused) body.update();
-  });
 
-  showTrailsIsON && trailManager.drawTrails(camera);
-
-  if (startDrag && endDrag) {
-    drawTrajectory(startDrag.x, startDrag.y, endDrag.x, endDrag.y);
-  }
-
-  if(collideIsON){
-    for (let i = 0; i < celestialBodies.length; i++) {
+    // Detect collision with other bodies
+    if (collideIsON) {
       for (let j = i + 1; j < celestialBodies.length; j++) {
-        const dx = celestialBodies[i].x - celestialBodies[j].x;
-        const dy = celestialBodies[i].y - celestialBodies[j].y;
+        const otherBody = celestialBodies[j];
+        const dx = body.x - otherBody.x;
+        const dy = body.y - otherBody.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-  
-        if (distance < celestialBodies[i].radius + celestialBodies[j].radius) {
-          bodyCollide(celestialBodies[i], celestialBodies[j]);
+
+        if (distance < body.radius + otherBody.radius) {
+          bodyCollide(body, otherBody);
         }
       }
     }
+
+    // Update and draw body
+    if (!isPaused) body.update();
+    body.draw();
+  }
+
+  showTrailsIsON && trailManager.drawTrails(camera);
+
+  // Draw trajectory if dragging
+  if (startDrag && endDrag) {
+    drawTrajectory(startDrag.x, startDrag.y, endDrag.x, endDrag.y);
   }
 
   ctx.restore();
