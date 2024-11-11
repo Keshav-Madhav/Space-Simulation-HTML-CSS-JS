@@ -108,7 +108,8 @@ function massTransfer(body1, body2) {
       celestialBodies.push(
         new CelestialBody({
           bodyType: 'blackHole',
-          density: 30,
+          density: celestialBodyValues.blackHole.density,
+          weight: body1.weight + body2.weight,
           x: (body1.x + body2.x) / 2,
           y: (body1.y + body2.y) / 2,
           dx: (body1.dx + body2.dx) / 2,
