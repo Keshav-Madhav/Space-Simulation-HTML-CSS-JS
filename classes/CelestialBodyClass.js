@@ -15,8 +15,6 @@
  * @property {string} trailColor - Color used for trajectory trail
  * @property {string} textColor - Color used for labels and text
  * @property {number} elasticity - Bounce elasticity coefficient
- * @property {Array<{x: number, y: number}>} trajectory - Array of previous positions
- * @property {number} maxTrajectoryPoints - Maximum number of points in trajectory
  * @property {string} label - Display label for the celestial body
  * @property {number} prevX - Previous x position
  * @property {number} prevY - Previous y position
@@ -137,59 +135,9 @@ class CelestialBody {
     this.x += this.dx;
     this.y += this.dy;
 
-    // Update velocity based on gravitational forces
-    this.updateGravity(celestialBodies);
-
     // Update velocity based on acceleration
     this.dx += this.ax;
     this.dy += this.ay;
-  }
-
-  /**
-   * Calculates the gravitational force between this body and another celestial body.
-   * @param {CelestialBody} otherBody - The other celestial body
-   * @returns {{ax: number, ay: number}} The acceleration components caused by gravitational force
-   */
-  calculateGravitationalForce(otherBody) {
-    const G = 0.1; // Gravitational constant (you can adjust this value)
-    
-    const dx = otherBody.x - this.x;
-    const dy = otherBody.y - this.y;
-    const distanceSquared = dx * dx + dy * dy;
-    const distance = Math.sqrt(distanceSquared);
-
-    // Avoid division by zero and very close interactions
-    if (distance < 1) {
-      // Return zero acceleration if the bodies are too close
-      return { ax: 0, ay: 0 };
-    }
-
-    const force = (G * this.weight * otherBody.weight) / distanceSquared;
-
-    // Calculate acceleration components
-    const accelerationX = force * (dx / distance) / this.weight;
-    const accelerationY = force * (dy / distance) / this.weight;
-
-    return { ax: accelerationX, ay: accelerationY };
-  }
-
-  /**
-   * Updates the body's acceleration based on gravitational forces from all other bodies.
-   * @param {CelestialBody[]} celestialBodies - Array of all celestial bodies in the simulation
-   */
-  updateGravity(celestialBodies) {
-    // Reset acceleration
-    this.ax = 0;
-    this.ay = 0;
-
-    // Calculate gravitational forces from other celestial bodies
-    celestialBodies.forEach((body) => {
-      if (body !== this) {
-        const { ax, ay } = this.calculateGravitationalForce(body);
-        this.ax += ax;
-        this.ay += ay;
-      }
-    });
   }
 }
 

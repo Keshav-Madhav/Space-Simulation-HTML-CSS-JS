@@ -9,6 +9,7 @@ import { spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, setupThreeBodyProblem
 import { smoothFollow, updateCameraToFollowCenterOfMass } from "./functions/cameraHelper.js";
 import { prompt, showPrompts, clearPrompts } from "./functions/showPrompts.js";
 import { startDragHandler, drawTrajectory } from "./functions/dragListeners.js";
+import { PhysicsSystem } from "./classes/PhysicsSystem.js";
 
 //resize canvas
 window.addEventListener('resize', resizeCanvas);
@@ -288,7 +289,7 @@ document.addEventListener('keydown', function (event) {
   }
 
   if (event.key === 'k') {
-    zoomFactor = 0.5;
+    // zoomFactor = 0.5;
     collideIsON = collision.checked = false;
     showTrailsIsON = showTrails.checked = false;
     showStarsIsON = showStars.checked = false;
@@ -318,7 +319,7 @@ document.addEventListener('keydown', function (event) {
   }
 
   if(event.key === 'g'){
-    zoomFactor = 0.3;
+    zoomFactor = 0.15;
     showVelocitiesIsON = showVelocities.checked = false;
     showStarsIsON = showStars.checked = false;
     collideIsON = collision.checked = false;
@@ -379,9 +380,21 @@ canvas.addEventListener('wheel', function(event) {
 // Create a new trail manager instance
 const trailManager = new TrailManager({ context: trailctx });
 
+// Create a new physics system instance
+const physicsSystem = new PhysicsSystem();
+
 function draw() {
   const deltaTime = getDeltaTime();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (!isPaused) {
+    physicsSystem.update(celestialBodies);
+    
+    // Update all bodies
+    for (let i = 0; i < celestialBodies.length; i++) {
+      celestialBodies[i].update();
+    }
+  }
 
   if (keys.ArrowUp) camera.y -= (camSpeed / Math.sqrt(zoomFactor));
   if (keys.ArrowDown) camera.y += (camSpeed / Math.sqrt(zoomFactor));

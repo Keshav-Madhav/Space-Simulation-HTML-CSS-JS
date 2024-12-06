@@ -78,9 +78,34 @@ function setupThreeBodyProblem() {
 function spawnPlanetsNearMouse(numPlanets) {
   const worldCoords = screenToWorldCoordinates(canvas.width / 2, canvas.height / 2);
 
+  // Define an array of vibrant colors
+  const colorVariations = [
+    { r: 135, g: 206, b: 235 },  // Bright Sky Blue
+    { r: 255, g: 99, b: 71 },    // Bright Tomato Red
+    { r: 255, g: 215, b: 0 },    // Bright Gold/Yellow
+    { r: 50, g: 205, b: 50 },    // Lime Green
+    { r: 255, g: 105, b: 180 },  // Hot Pink
+    { r: 173, g: 216, b: 230 },  // Light Blue
+    { r: 255, g: 160, b: 122 }   // Light Salmon
+  ];
+
   for (let i = 0; i < numPlanets; i++) {
     const randomXOffset = (Math.random() - 0.5) * 800 / zoomFactor;
     const randomYOffset = (Math.random() - 0.5) * 600 / zoomFactor;
+
+    // Determine color: mostly white with some colorful variation
+    let planetColor;
+    if (Math.random() < 0.1) {  // 5% chance of being a colorful planet
+      planetColor = colorVariations[Math.floor(Math.random() * colorVariations.length)];
+    } else {
+      // Slightly varied white to give a bit of natural variation
+      const whiteVariation = 100;
+      planetColor = { 
+        r: 255 - Math.random() * whiteVariation, 
+        g: 255 - Math.random() * whiteVariation, 
+        b: 255 - Math.random() * whiteVariation 
+      };
+    }
 
     const newPlanet = new CelestialBody({
       bodyType: 'planet',
@@ -90,7 +115,7 @@ function spawnPlanetsNearMouse(numPlanets) {
       y: worldCoords.y + randomYOffset,
       dx: Math.random() * 2 - 1,
       dy: Math.random() * 2 - 1,
-      color: { r: 255, g: 255, b: 255 },
+      color: planetColor,
       label: 'Planet ' + (celestialBodies.length + 1)
     });
 
@@ -289,12 +314,12 @@ function spawnGalaxy() {
   celestialBodies.push(blackHole);
 
   // Spawn 100-200 planets orbiting the black hole
-  const numPlanets = Math.floor(Math.random() * 10) + 20;
-  const baseDistance = 1000; // 1 unit = 1/10,000 scale of the galaxy
+  const numPlanets = Math.floor(Math.random() * 100) + 100;
+  const baseDistance = 1300;
 
   for (let i = 0; i < numPlanets; i++) {
     const angle = Math.random() * 2 * Math.PI;
-    const distance = baseDistance + Math.random() * 500; // Random distance from 1000 to 1500
+    const distance = baseDistance + Math.random() * 500;
     const x = centerX + distance * Math.cos(angle);
     const y = centerY + distance * Math.sin(angle);
 
