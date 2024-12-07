@@ -1,6 +1,4 @@
-import { bodyCollide } from "./functions/collisionAndMassTransfer.js";
 import { drawFPS } from "./functions/fpsDisplay.js";
-import { createConstantFPSGameLoop } from "./functions/createConstantFPSGameLoop.js";
 import { getDeltaTime } from "./functions/deltaTime.js";
 import { BackgroundStar } from "./classes/BackgroundStarsClass.js";
 import { TrailManager } from "./classes/TrailManagerClass.js";
@@ -289,12 +287,13 @@ document.addEventListener('keydown', function (event) {
   }
 
   if (event.key === 'k') {
-    // zoomFactor = 0.5;
-    collideIsON = collision.checked = false;
+    zoomFactor = 0.1;
+    // collideIsON = collision.checked = false;
     showTrailsIsON = showTrails.checked = false;
     showStarsIsON = showStars.checked = false;
     showVelocitiesIsON = showVelocities.checked = false;
-    // showLabelsIsON = showLabels.checked = false;
+    showLabelsIsON = showLabels.checked = false;
+    showFPSIsON = showFPS.checked = true;
     spawnPlanetsNearMouse(1500);
   }
 
@@ -388,7 +387,8 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   if (!isPaused) {
-    physicsSystem.update(celestialBodies);
+    // Update physics system (handles collisions and attraction forces between bodies using Barnes-Hut algorithm)
+    physicsSystem.update(celestialBodies, collideIsON);
     
     // Update all bodies
     for (let i = 0; i < celestialBodies.length; i++) {
@@ -435,20 +435,6 @@ function draw() {
     if (showTrailsIsON) {
       trailManager.initializeTrail(body.id, body.trailColor);
       trailManager.updateTrail(body.id, body.x, body.y, body.dx, body.dy);
-    }
-
-    // Detect collision with other bodies
-    if (collideIsON) {
-      for (let j = i + 1; j < celestialBodies.length; j++) {
-        const otherBody = celestialBodies[j];
-        const dx = body.x - otherBody.x;
-        const dy = body.y - otherBody.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance < body.radius + otherBody.radius) {
-          bodyCollide(body, otherBody);
-        }
-      }
     }
 
     // Update and draw body

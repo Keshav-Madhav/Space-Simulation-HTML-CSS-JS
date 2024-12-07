@@ -1,3 +1,6 @@
+import { bodyCollide } from "../functions/collisionAndMassTransfer.js";
+import { CelestialBody } from "./CelestialBodyClass.js";
+
 /**
  * Represents a node in the Barnes-Hut quad tree
  */
@@ -166,6 +169,47 @@ class BarnesHutTree {
   }
 
   /**
+   * Find potential collision candidates within a certain radius
+   * @param {CelestialBody} body - The body to check for potential collisions
+   * @param {number} searchRadius - Radius to search for potential collisions
+   * @returns {Array} Potential collision candidates
+   */
+  findPotentialCollisions(body, searchRadius) {
+    const candidates = [];
+    this._findCollisionCandidates(this.root, body, searchRadius, candidates);
+    return candidates;
+  }
+
+  _findCollisionCandidates(node, body, searchRadius, candidates) {
+    if (node === null) return;
+
+    // Check if the node's bounding box intersects with the search area
+    const nodeRight = node.x + node.width;
+    const nodeBottom = node.y + node.height;
+    const bodyRight = body.x + searchRadius;
+    const bodyBottom = body.y + searchRadius;
+
+    const intersects = 
+      node.x < bodyRight && 
+      nodeRight > body.x - searchRadius && 
+      node.y < bodyBottom && 
+      nodeBottom > body.y - searchRadius;
+
+    if (!intersects) return;
+
+    // If it's a leaf node with a body
+    if (node.isLeaf && node.body && node.body !== body) {
+      candidates.push(node.body);
+      return;
+    }
+
+    // Recursively check child nodes
+    for (const child of node.children) {
+      this._findCollisionCandidates(child, body, searchRadius, candidates);
+    }
+  }
+
+  /**
    * Clears the tree
    */
   clear() {
@@ -184,7 +228,7 @@ class PhysicsSystem {
   /**
    * Updates physics for all bodies using Barnes-Hut algorithm
    */
-  update(bodies) {
+  update(bodies, checkCollisions) {
     // Find bounds of all bodies
     let minX = Infinity;
     let minY = Infinity;
@@ -226,6 +270,40 @@ class PhysicsSystem {
       const force = forces.get(body);
       body.ax = force.ax / body.weight;
       body.ay = force.ay / body.weight;
+    }
+
+    // Handle collisions if enabled
+    if (checkCollisions) {
+      this._handleCollisions(bodies);
+    }
+  }
+
+  /**
+   * Handles collision detection using Barnes-Hut tree
+   */
+  _handleCollisions(bodies) {
+    const collisionChecked = new Set();
+
+    for (const body of bodies) {
+      const searchRadius = body.radius * 2; // Search radius based on body size
+
+      // Find potential collision candidates
+      const candidates = this.bhTree.findPotentialCollisions(body, searchRadius);
+
+      // Check actual collisions only for candidates
+      for (const otherBody of candidates) {
+        const collisionPair = [body.id, otherBody.id].sort().join('-');
+        if (collisionChecked.has(collisionPair)) continue;
+
+        const dx = body.x - otherBody.x;
+        const dy = body.y - otherBody.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < body.radius + otherBody.radius) {
+          bodyCollide(body, otherBody);
+          collisionChecked.add(collisionPair);
+        }
+      }
     }
   }
 }
