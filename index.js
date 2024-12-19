@@ -117,7 +117,7 @@ lightSpeedP.addEventListener('click', function() {
 
 solarSystem.addEventListener('click', function() {
   celestialBodies.length = 0;
-  zoomFactor = 0.05;
+  zoomFactor = 0.02;
   velocityUnit = 'km/s';
   showTrailsIsON = showTrails.checked = false;
   showStarsIsON = showStars.checked = false;
@@ -287,7 +287,7 @@ document.addEventListener('keydown', function (event) {
   }
 
   if (event.key === 'k') {
-    zoomFactor = 0.1;
+    // zoomFactor = 0.05;
     // collideIsON = collision.checked = false;
     showTrailsIsON = showTrails.checked = false;
     showStarsIsON = showStars.checked = false;
@@ -337,6 +337,10 @@ document.addEventListener('keydown', function (event) {
 
   if(event.key === 'm'){
     spawnMeteorShower();
+  }
+
+  if(event.key === 'z'){
+    showDebugPoints = !showDebugPoints;
   }
 });
 

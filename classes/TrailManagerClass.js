@@ -51,43 +51,40 @@ class TrailManager {
     const trail = this.trails.get(bodyId);
     if (!trail) return;
 
-    // Only update if the body is moving
-    if (dx !== 0 || dy !== 0) {
-      const positions = trail.positions;
-      
-      // Get previous point indices for curve checking
-      let prevIdx = (trail.head - 2 + positions.length) % positions.length;
-      let prevPrevIdx = (trail.head - 4 + positions.length) % positions.length;
+    const positions = trail.positions;
+    
+    // Get previous point indices for curve checking
+    let prevIdx = (trail.head - 2 + positions.length) % positions.length;
+    let prevPrevIdx = (trail.head - 4 + positions.length) % positions.length;
 
-      // Check if we have enough points to perform curve optimization
-      if (trail.isFull || trail.head >= 4) {
-        const p1x = positions[prevPrevIdx];
-        const p1y = positions[prevPrevIdx + 1];
-        const p2x = positions[prevIdx];
-        const p2y = positions[prevIdx + 1];
+    // Check if we have enough points to perform curve optimization
+    if (trail.isFull || trail.head >= 4) {
+      const p1x = positions[prevPrevIdx];
+      const p1y = positions[prevPrevIdx + 1];
+      const p2x = positions[prevIdx];
+      const p2y = positions[prevIdx + 1];
 
-        // Calculate the area of the triangle formed by the points
-        const area = Math.abs((p2x - p1x) * (y - p1y) - (x - p1x) * (p2y - p1y));
+      // Calculate the area of the triangle formed by the points
+      const area = Math.abs((p2x - p1x) * (y - p1y) - (x - p1x) * (p2y - p1y));
 
-        // If points form a near-straight line, overwrite the middle point
-        if (area < threshold) {
-          positions[prevIdx] = x;
-          positions[prevIdx + 1] = y;
-          return;
-        }
+      // If points form a near-straight line, overwrite the middle point
+      if (area < threshold) {
+        positions[prevIdx] = x;
+        positions[prevIdx + 1] = y;
+        return;
       }
+    }
 
-      // Add new point
-      positions[trail.head] = x;
-      positions[trail.head + 1] = y;
-      
-      // Update head position
-      trail.head = (trail.head + 2) % positions.length;
-      
-      // Mark as full if we've wrapped around
-      if (trail.head === 0) {
-        trail.isFull = true;
-      }
+    // Add new point
+    positions[trail.head] = x;
+    positions[trail.head + 1] = y;
+    
+    // Update head position
+    trail.head = (trail.head + 2) % positions.length;
+    
+    // Mark as full if we've wrapped around
+    if (trail.head === 0) {
+      trail.isFull = true;
     }
   }
 
@@ -138,6 +135,21 @@ class TrailManager {
       }
 
       this.context.stroke();
+
+      // Debug points can be toggled on/off
+      if (showDebugPoints) {
+        this.context.fillStyle = trail.color;
+        for (let i = 0; i < numPoints; i += 4) {
+          const idx = (startIdx + i) % positions.length;
+          const pointX = positions[idx] - camera.x;
+          const pointY = positions[idx + 1] - camera.y;
+
+          // Draw a small dot at each point
+          this.context.beginPath();
+          this.context.arc(pointX, pointY, 2, 0, Math.PI * 2);
+          this.context.fill();
+        }
+      }
     });
 
     this.context.setLineDash([]);

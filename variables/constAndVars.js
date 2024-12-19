@@ -9,6 +9,7 @@ let showStarsIsON = true;
 let showVelocitiesIsON = true;
 let showLabelsIsON = true;
 let showFPSIsON = false;
+let showDebugPoints = false;
 let velocityUnit = 'm/s';
 let zoomFactor = 0.85;
 let zoomSpeed = 0.1;
