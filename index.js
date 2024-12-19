@@ -380,6 +380,11 @@ canvas.addEventListener('wheel', function(event) {
   }
 });
 
+canvas.addEventListener('mousemove', function(event) {
+  camera.clientX = event.clientX;
+  camera.clientY = event.clientY;
+})
+
 // Create a new trail manager instance
 const trailManager = new TrailManager({ context: trailctx });
 

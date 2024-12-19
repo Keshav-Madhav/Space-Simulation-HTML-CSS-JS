@@ -41,7 +41,9 @@ const camera = {
   prevX: 0,
   prevY: 0,
   lastMouseX: 0,
-  lastMouseY: 0
+  lastMouseY: 0,
+  clientX: 0,
+  clientY: 0
 };
 
 /** 

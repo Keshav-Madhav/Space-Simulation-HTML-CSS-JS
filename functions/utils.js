@@ -23,21 +23,47 @@ const worldToScreenCoordinates = (worldX, worldY) => {
 }
 
 /**
- * Zoom in by increasing the zoom factor.
+ * Zoom in towards mouse position by increasing the zoom factor.
  */
 const zoomIn = () => {
-  // Apply exponential zoom for gradual zooming effect
+  // Store mouse position before zoom
+  const mouseX = camera.clientX;
+  const mouseY = camera.clientY;
+  
+  // Convert mouse position to world coordinates before zoom
+  const worldPosBeforeZoom = screenToWorldCoordinates(mouseX, mouseY);
+  
   zoomFactor = Math.max(Math.min(zoomFactor * (1 + zoomSpeed), 6), 0.01);
   zoomFactor = parseFloat(zoomFactor.toFixed(3));
+  
+  // Convert the same world position back to screen coordinates after zoom
+  const screenPosAfterZoom = worldToScreenCoordinates(worldPosBeforeZoom.x, worldPosBeforeZoom.y);
+  
+  // Adjust camera position to keep mouse position fixed
+  camera.x += (screenPosAfterZoom.x - mouseX) / zoomFactor;
+  camera.y += (screenPosAfterZoom.y - mouseY) / zoomFactor;
 }
 
 /**
- * Zoom out by decreasing the zoom factor.
+ * Zoom out from mouse position by decreasing the zoom factor.
  */
 const zoomOut = () => {
-  // Apply exponential zoom for gradual zooming effect
+  // Store mouse position before zoom
+  const mouseX = camera.clientX;
+  const mouseY = camera.clientY;
+  
+  // Convert mouse position to world coordinates before zoom
+  const worldPosBeforeZoom = screenToWorldCoordinates(mouseX, mouseY);
+  
   zoomFactor = Math.max(Math.min(zoomFactor * (1 - zoomSpeed), 6), 0.01);
   zoomFactor = parseFloat(zoomFactor.toFixed(3));
+  
+  // Convert the same world position back to screen coordinates after zoom
+  const screenPosAfterZoom = worldToScreenCoordinates(worldPosBeforeZoom.x, worldPosBeforeZoom.y);
+  
+  // Adjust camera position to keep mouse position fixed
+  camera.x += (screenPosAfterZoom.x - mouseX) / zoomFactor;
+  camera.y += (screenPosAfterZoom.y - mouseY) / zoomFactor;
 }
 
 /**
