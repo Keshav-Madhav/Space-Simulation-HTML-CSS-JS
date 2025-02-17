@@ -67,8 +67,8 @@ centerMass.addEventListener('click', function() {
   cameraFollow = true;
   followCam.checked = true;
 });
-zoomMinus.addEventListener('click', zoomOut);
-zoomPlus.addEventListener('click', zoomIn);
+zoomMinus.addEventListener('click', zoomIn);
+zoomPlus.addEventListener('click', zoomOut);
 
 
 // Add event listeners to toggle features

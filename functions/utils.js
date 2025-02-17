@@ -24,6 +24,7 @@ const worldToScreenCoordinates = (worldX, worldY) => {
 
 /**
  * Zoom in towards mouse position by increasing the zoom factor.
+ * If camera is locked on a celestial body, the camera will zoom in towards the center of screen.
  */
 const zoomIn = () => {
   // Store mouse position before zoom
@@ -40,12 +41,15 @@ const zoomIn = () => {
   const screenPosAfterZoom = worldToScreenCoordinates(worldPosBeforeZoom.x, worldPosBeforeZoom.y);
   
   // Adjust camera position to keep mouse position fixed
-  camera.x += (screenPosAfterZoom.x - mouseX) / zoomFactor;
-  camera.y += (screenPosAfterZoom.y - mouseY) / zoomFactor;
+  if(!cameraFollow) {
+    camera.x += (screenPosAfterZoom.x - mouseX) / zoomFactor;
+    camera.y += (screenPosAfterZoom.y - mouseY) / zoomFactor;
+  }
 }
 
 /**
  * Zoom out from mouse position by decreasing the zoom factor.
+ * If camera is locked on a celestial body, the camera will zoom out towards the center of screen.
  */
 const zoomOut = () => {
   // Store mouse position before zoom
@@ -62,8 +66,10 @@ const zoomOut = () => {
   const screenPosAfterZoom = worldToScreenCoordinates(worldPosBeforeZoom.x, worldPosBeforeZoom.y);
   
   // Adjust camera position to keep mouse position fixed
-  camera.x += (screenPosAfterZoom.x - mouseX) / zoomFactor;
-  camera.y += (screenPosAfterZoom.y - mouseY) / zoomFactor;
+  if(!cameraFollow) {
+    camera.x += (screenPosAfterZoom.x - mouseX) / zoomFactor;
+    camera.y += (screenPosAfterZoom.y - mouseY) / zoomFactor;
+  }
 }
 
 /**
