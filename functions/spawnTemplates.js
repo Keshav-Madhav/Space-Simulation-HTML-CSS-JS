@@ -72,7 +72,7 @@ function setupThreeBodyProblem() {
 }
 
 /**
- * Spawns a specified number of planets near the mouse cursor.
+ * Spawns a specified number of planets near the mouse cursor in a circular area.
  * @param {number} numPlanets The number of planets to spawn
  */
 function spawnPlanetsNearMouse(numPlanets) {
@@ -89,13 +89,19 @@ function spawnPlanetsNearMouse(numPlanets) {
     { r: 255, g: 160, b: 122 }   // Light Salmon
   ];
 
+  const maxSpawnRadius = 300 / zoomFactor; // Maximum spawn radius in world coordinates
+
   for (let i = 0; i < numPlanets; i++) {
-    const randomXOffset = (Math.random() - 0.5) * 800 / zoomFactor;
-    const randomYOffset = (Math.random() - 0.5) * 600 / zoomFactor;
+    // Generate a random angle (0 to 2π) and radius (0 to maxSpawnRadius)
+    const theta = Math.random() * Math.PI * 2;
+    const r = Math.sqrt(Math.random()) * maxSpawnRadius; // Square root for even distribution
+
+    const randomXOffset = r * Math.cos(theta);
+    const randomYOffset = r * Math.sin(theta);
 
     // Determine color: mostly white with some colorful variation
     let planetColor;
-    if (Math.random() < 0.1) {  // 5% chance of being a colorful planet
+    if (Math.random() < 0.1) {  // 10% chance of being a colorful planet
       planetColor = colorVariations[Math.floor(Math.random() * colorVariations.length)];
     } else {
       // Slightly varied white to give a bit of natural variation
