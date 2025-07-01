@@ -96,5 +96,33 @@ function resizeCanvas() {
   trailCanvas.height = window.innerHeight - 1;
 }
 
+/**
+ * Finds the closest celestial body to the given screen coordinates.
+ * @param {number} screenX The x coordinate on the screen
+ * @param {number} screenY The y coordinate on the screen
+ * @returns {Object|null} The closest celestial body object or null if none found
+ */
 
-export { screenToWorldCoordinates, worldToScreenCoordinates, zoomIn, zoomOut, hexToRGB, resizeCanvas };
+function findClosestBody(screenX, screenY) {
+  if (celestialBodies.length === 0) return null;
+  
+  const {x: worldX, y: worldY} = screenToWorldCoordinates(screenX, screenY);
+  
+  let closestBody = null;
+  let minDistance = Infinity;
+  const clickThreshold = 100 / zoomFactor;
+  
+  celestialBodies.forEach(body => {
+    const distance = Math.sqrt((body.x - worldX) ** 2 + (body.y - worldY) ** 2);
+    
+    if (distance < clickThreshold && distance < minDistance) {
+      minDistance = distance;
+      closestBody = body;
+    }
+  });
+  
+  return closestBody;
+}
+
+
+export { screenToWorldCoordinates, worldToScreenCoordinates, zoomIn, zoomOut, hexToRGB, resizeCanvas, findClosestBody };

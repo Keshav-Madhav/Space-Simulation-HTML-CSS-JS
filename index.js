@@ -2,7 +2,7 @@ import { drawFPS } from "./functions/fpsDisplay.js";
 import { getDeltaTime } from "./functions/deltaTime.js";
 import { BackgroundStar } from "./classes/BackgroundStarsClass.js";
 import { TrailManager } from "./classes/TrailManagerClass.js";
-import { zoomIn, zoomOut, hexToRGB, resizeCanvas } from "./functions/utils.js";
+import { zoomIn, zoomOut, hexToRGB, resizeCanvas, findClosestBody } from "./functions/utils.js";
 import { spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, setupThreeBodyProblem, spawnSolarSystem, spawnGalaxy, spawnBinaryStarSystem, spawnMeteorShower } from "./functions/spawnTemplates.js";
 import { smoothFollow, updateCameraToFollowCenterOfMass } from "./functions/cameraHelper.js";
 import { prompt, showPrompts, clearPrompts } from "./functions/showPrompts.js";
@@ -183,6 +183,38 @@ showStars.addEventListener('change', function() {
 });
 
 canvas.addEventListener('mousedown', startDragHandler);
+
+canvas.addEventListener('dblclick', function(event) {
+  const rect = canvas.getBoundingClientRect();
+  const clickX = event.clientX - rect.left;
+  const clickY = event.clientY - rect.top;
+  
+  const closestBody = findClosestBody(clickX, clickY);
+  
+  if (closestBody) {
+    cameraFollowingIndex = celestialBodies.indexOf(closestBody);
+    cameraFollow = true;
+    followCam.checked = true;
+    
+    prompt({
+      text: `Now following ${closestBody.label}`,
+      y: canvas.height - 20,
+      vel: 20,
+      time: 0.4,
+      textSize: 16,
+      isOverRide: true
+    });
+  } else {
+    prompt({
+      text: "No body nearby to follow",
+      y: canvas.height - 20,
+      vel: 20,
+      time: 0.1,
+      textSize: 16,
+      isOverRide: true
+    });
+  }
+});
 
 document.addEventListener('keydown', function (event) {
   if (keys.hasOwnProperty(event.key)) {
