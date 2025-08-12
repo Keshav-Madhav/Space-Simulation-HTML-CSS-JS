@@ -43,6 +43,9 @@ BlackHoleDensity.addEventListener('input', function() {
 BlackHoleColor.addEventListener('input', function() {
   celestialBodyValues.blackHole.color = hexToRGB(this.value);
 });
+timeScaleSlider.addEventListener('input', function() {
+  timeScale = parseFloat(this.value);
+});
 
 
 // Add event listeners to camera settings
@@ -312,6 +315,16 @@ document.addEventListener('keydown', function (event) {
     cameraFollowingIndex = (cameraFollowingIndex + direction + celestialBodies.length) % celestialBodies.length;
   }
 
+  // Increase / Decrease Time Scale
+  if (event.key === '-') {
+    timeScale = Math.max(0.1, timeScale - 0.1);
+    timeScaleElement.value = timeScale;
+  }
+  if (event.key === '=') {
+    timeScale = Math.min(50, timeScale + 0.1);
+    timeScaleElement.value = timeScale;
+  }
+
   if (event.key === 'c') {
     
     if(celestialBodies.length === 0){
@@ -455,12 +468,14 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   if (!isPaused) {
-    // Update physics system (handles collisions and attraction forces between bodies using Barnes-Hut algorithm)
-    physicsSystem.update(celestialBodies, collideIsON);
-    
-    // Update all bodies
-    for (let i = 0; i < celestialBodies.length; i++) {
-      celestialBodies[i].update();
+    for (let i = 0; i < timeScale; i++) {
+      // Update physics system (handles collisions and attraction forces between bodies using Barnes-Hut algorithm)
+      physicsSystem.update(celestialBodies, collideIsON);
+      
+      // Update all bodies
+      for (let j = 0; j < celestialBodies.length; j++) {
+        celestialBodies[j].update();
+      }
     }
   }
 
@@ -535,6 +550,7 @@ function updateUI(deltaTime) {
   ctx.font = '14px Arial';
   ctx.fillText(`(${camera.x.toFixed(2)}, ${camera.y.toFixed(2)})`, 10, canvas.height - 20);
   ctx.fillText(`Zoom Scale: ${zoomFactor}`, 10, canvas.height - 6);
+  ctx.fillText(`Time Scale: ${timeScale.toFixed(1)}x`, 10, canvas.height - 34);
 
   if(selectedBody){
     const text = `Selected Body: ${selectedBody}`;
@@ -582,6 +598,7 @@ function resetEverything() {
   showFPSIsON = showFPS.checked = true;
   showVelocitiesIsON = showVelocities.checked = true;
   showLabelsIsON = showLabels.checked = true;
+  timeScaleSlider.value = timeScale = 1;
 
   // Reset camera settings
   cameraFollow = followCam.checked = false;

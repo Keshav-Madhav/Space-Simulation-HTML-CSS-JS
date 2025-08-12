@@ -17,6 +17,7 @@ let isCameraLockedOn = false;
 let smoothedSpeed = 0;
 let selectedBody = '';
 let isPaused = false;
+let timeScale = 1;
 
 const cameraMoveSpeed = 1;
 
@@ -26,8 +27,7 @@ const backgroundStars = [];
 /** @type {CelestialBody[]} */
 const celestialBodies = [];
 
-/** 
- * @typedef {Object} Camera
+/** * @typedef {Object} Camera
  * @property {number} x - Current x position of the camera
  * @property {number} y - Current y position of the camera
  * @property {number} prevX - Previous x position of the camera
@@ -46,8 +46,7 @@ const camera = {
   clientY: 0
 };
 
-/** 
- * @typedef {Object} TargetCamera
+/** * @typedef {Object} TargetCamera
  * @property {number} x - Target x position for camera movement
  * @property {number} y - Target y position for camera movement
  */
