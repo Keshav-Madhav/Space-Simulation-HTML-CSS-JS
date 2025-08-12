@@ -13,10 +13,10 @@ class TrailManager {
     
     /**
      * @type {Map<string, {
-     *   positions: Float32Array,
-     *   head: number,      // Index where next point will be written
-     *   isFull: boolean,   // Whether buffer has wrapped around
-     *   color: string
+     * positions: Float32Array,
+     * head: number,      // Index where next point will be written
+     * isFull: boolean,   // Whether buffer has wrapped around
+     * color: string
      * }>} trails
      */
     this.trails = new Map();
@@ -45,14 +45,17 @@ class TrailManager {
    * @param {number} y Current y position
    * @param {number} dx Current x velocity
    * @param {number} dy Current y velocity
-   * @param {number} [threshold] Threshold for slight curves
    */
-  updateTrail(bodyId, x, y, dx, dy, threshold = 0.2) {
+  updateTrail(bodyId, x, y, dx, dy) {
     const trail = this.trails.get(bodyId);
     if (!trail) return;
 
     const positions = trail.positions;
     
+    // Calculate speed and set dynamic threshold
+    const speed = Math.sqrt(dx * dx + dy * dy);
+    const threshold = Math.min(speed * 0.1, 1); // Adjust multiplier for desired sensitivity
+
     // Get previous point indices for curve checking
     let prevIdx = (trail.head - 2 + positions.length) % positions.length;
     let prevPrevIdx = (trail.head - 4 + positions.length) % positions.length;

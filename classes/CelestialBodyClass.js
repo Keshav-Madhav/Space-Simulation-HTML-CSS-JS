@@ -65,7 +65,7 @@ class CelestialBody {
     // this.dx = 2997.92458 * 1;
     this.dy = dy;
     this.color = `rgba(${color.r}, ${color.g}, ${color.b}, 1)`;
-    this.trailColor = trailColor || `rgba(${color.r}, ${color.g}, ${color.b}, 0.5)`;
+    this.trailColor = trailColor || `rgba(${color.r}, ${color.g}, ${color.b}, 0.65)`;
     this.textColor = textColor || `rgba(${color.r}, ${color.g}, ${color.b}, 0.9)`;
     this.elasticity = bodyType === 'planet' ? 0.8 : bodyType === 'star' ? 0.1 : bodyType === 'blackHole' ? 0.001 : 0.8;
     this.label = label;
@@ -103,10 +103,8 @@ class CelestialBody {
     }
   
     if (showVelocitiesIsON) {
-      // Calculate magnitude of velocity
-      const displacementX = this.x - this.prevX;
-      const displacementY = this.y - this.prevY;
-      const velocityMagnitude = Math.sqrt(displacementX ** 2 + displacementY ** 2);
+      // Calculate magnitude of velocity from dx and dy properties for a stable reading
+      const velocityMagnitude = Math.sqrt(this.dx ** 2 + this.dy ** 2);
       const velocityKMPS = `${(velocityMagnitude).toFixed(2)}km/s`;
       const velocityMPS = `${(velocityMagnitude * 1000).toFixed(2)}m/s`;
     
