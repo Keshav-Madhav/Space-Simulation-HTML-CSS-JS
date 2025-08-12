@@ -1,4 +1,5 @@
 import { drawFPS } from "./functions/fpsDisplay.js";
+import { spawnDeterministicTestSystem } from "./functions/spawnTemplates.js";
 import { getDeltaTime } from "./functions/deltaTime.js";
 import { BackgroundStar } from "./classes/BackgroundStarsClass.js";
 import { TrailManager } from "./classes/TrailManagerClass.js";
@@ -113,6 +114,19 @@ lightSpeedP.addEventListener('click', function() {
   spawnPlanetWithLightSpeed();
   cameraFollow = true;
   followCam.checked = true;
+});
+
+deterministicTest.addEventListener('click', function() {
+  celestialBodies.length = 0;
+  spawnDeterministicTestSystem();
+  prompt({
+    text: 'Deterministic test system spawned',
+    y: canvas.height - 20,
+    vel: 0,
+    time: 0.2,
+    textSize: 16,
+    isOverRide: true
+  });
 });
 
 solarSystem.addEventListener('click', function() {
@@ -369,6 +383,19 @@ document.addEventListener('keydown', function (event) {
 
   if(event.key === 'm'){
     spawnMeteorShower();
+  }
+
+  if(event.key === 'y'){
+    celestialBodies.length = 0;
+    spawnDeterministicTestSystem();
+    prompt({
+      text: 'Deterministic test system spawned',
+      y: canvas.height - 20,
+      vel: 0,
+      time: 0.2,
+      textSize: 16,
+      isOverRide: true
+    });
   }
 
   if(event.key === 'z'){

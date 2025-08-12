@@ -30,6 +30,7 @@ const lightSpeedP = document.getElementById('lightSpeedP');
 const solarSystem = document.getElementById('solarSystem');
 const galaxySpawn = document.getElementById('galaxySpawn');
 const reset = document.getElementById('reset');
+const deterministicTest = document.getElementById('deterministicTest');
 
 /** @type {HTMLCanvasElement} */
 const canvas = document.getElementById('canvas');

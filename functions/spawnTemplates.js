@@ -353,6 +353,71 @@ function spawnGalaxy() {
   }
 }
 
+function spawnDeterministicTestSystem() {
+  const fixedBodies = [
+    {
+      bodyType: 'star',
+      radius: 40,
+      density: 15,
+      x: 0,
+      y: 0,
+      dx: 0,
+      dy: 0,
+      color: { r: 255, g: 200, b: 0 },
+      label: 'T-Star'
+    },
+    {
+      bodyType: 'planet',
+      radius: 6,
+      density: 2,
+      x: 1200,
+      y: 0,
+      dx: 0,
+      dy: -16,
+      color: { r: 180, g: 200, b: 255 },
+      label: 'T-P1'
+    },
+    {
+      bodyType: 'planet',
+      radius: 5,
+      density: 1.2,
+      x: 0,
+      y: -2000,
+      dx: 13,
+      dy: 0,
+      color: { r: 255, g: 150, b: 150 },
+      label: 'T-P2'
+    },
+    {
+      bodyType: 'planet',
+      radius: 4,
+      density: 0.8,
+      x: -1800,
+      y: 800,
+      dx: 13,
+      dy: 8,
+      color: { r: 200, g: 255, b: 200 },
+      label: 'T-P3'
+    },
+  ];
+
+  fixedBodies.forEach(def => {
+    celestialBodies.push(
+      new CelestialBody({
+        bodyType: def.bodyType,
+        radius: def.radius,
+        density: def.density,
+        x: def.x,
+        y: def.y,
+        dx: def.dx,
+        dy: def.dy,
+        color: def.color,
+        label: def.label
+      })
+    );
+  });
+}
+
 /**
  * Spawns a binary star system with two stars orbiting each other in a stable, drift-free orbit,
  * and adds five planets orbiting the binary star system.
@@ -489,4 +554,4 @@ function spawnMeteorShower() {
   }
 }
 
-export { setupThreeBodyProblem, spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, spawnSolarSystem, spawnGalaxy, spawnMeteorShower, spawnBinaryStarSystem };
+export { setupThreeBodyProblem, spawnPlanetsNearMouse, spawnPlanetWithLightSpeed, spawnSolarSystem, spawnGalaxy, spawnMeteorShower, spawnBinaryStarSystem, spawnDeterministicTestSystem };
