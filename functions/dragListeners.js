@@ -1,6 +1,7 @@
-import { screenToWorldCoordinates } from "./utils.js";
+import { screenToWorldCoordinates, findClosestBody } from "./utils.js";
 import { CelestialBody } from "../classes/CelestialBodyClass.js";
 import { prompt } from "./showPrompts.js";
+import { PhysicsSystem } from "../classes/PhysicsSystem.js";
 
 let isShiftPressed = false;
 let isFirstDrag = true;
@@ -59,7 +60,76 @@ function dragHandler(e) {
   }
 }
 
+function predictFullSystemTrajectory(ghostBody, existingBodies, totalTime = 1000) {
+    const ghostTrajectory = [];
+    // Use a map to store trajectories for the top 5 bodies, keyed by their IDs
+    const closestBodiesTrajectories = new Map();
+
+    // 1. Create simulation bodies
+    const simBodies = existingBodies.map(body => new CelestialBody({ ...body }));
+    const ghostSimBody = new CelestialBody({ ...ghostBody });
+    simBodies.push(ghostSimBody);
+
+    // 2. Find the top 5 closest bodies
+    const topClosestBodies = [];
+    if (existingBodies.length > 0) {
+        const distances = simBodies
+            .filter(body => body.id !== ghostSimBody.id)
+            .map(body => ({
+                body,
+                distSq: (body.x - ghostSimBody.x) ** 2 + (body.y - ghostSimBody.y) ** 2
+            }));
+        
+        distances.sort((a, b) => a.distSq - b.distSq);
+        const closestFive = distances.slice(0, 5);
+
+        closestFive.forEach(item => {
+            topClosestBodies.push(item.body);
+            closestBodiesTrajectories.set(item.body.id, []); // Initialize trajectory arrays
+        });
+    }
+
+    // 3. Run the temporary simulation
+    const tempPhysics = new PhysicsSystem();
+    let simulatedTime = 0;
+    
+    while (simulatedTime < totalTime) {
+        tempPhysics.update(simBodies, false);
+
+        // Adaptive timestep logic
+        let maxForce = 0;
+        for (const body of simBodies) {
+            const forceMagnitude = Math.sqrt(body.ax ** 2 + body.ay ** 2);
+            if (forceMagnitude > maxForce) {
+                maxForce = forceMagnitude;
+            }
+        }
+        
+        const timeStep = Math.max(0.1, Math.min(5, 1 / (maxForce + 1e-5)));
+
+        // Update positions
+        for (const body of simBodies) {
+            body.dx += body.ax * timeStep;
+            body.dy += body.ay * timeStep;
+            body.x += body.dx * timeStep;
+            body.y += body.dy * timeStep;
+        }
+
+        // 4. Record trajectories
+        ghostTrajectory.push({ x: ghostSimBody.x, y: ghostSimBody.y });
+        for (const body of topClosestBodies) {
+            closestBodiesTrajectories.get(body.id).push({ x: body.x, y: body.y });
+        }
+        
+        simulatedTime += timeStep;
+    }
+
+    return { ghostTrajectory, closestBodiesTrajectories };
+}
+
+
 function drawTrajectory(startX, startY, endX, endY) {
+  // 1. Always draw the dotted launch indicator line
   const cameraAdjustedStartX = startX - camera.x;
   const cameraAdjustedStartY = startY - camera.y;
   const cameraAdjustedEndX = endX - camera.x;
@@ -72,7 +142,68 @@ function drawTrajectory(startX, startY, endX, endY) {
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
   ctx.stroke();
   ctx.setLineDash([]);
+
+  // 2. Only run the full prediction if there are fewer than 10 bodies
+  if (celestialBodies.length < 10) {
+    // Calculate launch velocity
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const maxSpeed = 50;
+    const launchSpeed = Math.min(0.05 * distance, maxSpeed);
+    let launchVelocityX = (distance > 0) ? (dx / distance) * launchSpeed : 0;
+    let launchVelocityY = (distance > 0) ? (dy / distance) * launchSpeed : 0;
+
+    // Define the "ghost" body
+    let bodyType = selectedBody.toLowerCase().replace(' ', '');
+    if (bodyType === 'blackhole') bodyType = 'blackHole';
+    const ghostBody = {
+      bodyType,
+      radius: celestialBodyValues[bodyType].radius,
+      density: celestialBodyValues[bodyType].density,
+      weight: 4 / 3 * Math.PI * Math.pow(celestialBodyValues[bodyType].radius, 3) * celestialBodyValues[bodyType].density,
+      x: endX, y: endY, dx: -launchVelocityX, dy: -launchVelocityY, ax: 0, ay: 0,
+      color: celestialBodyValues[bodyType].color, label: 'ghost'
+    };
+    
+    // Run the prediction
+    const { ghostTrajectory, closestBodiesTrajectories } = predictFullSystemTrajectory(ghostBody, celestialBodies);
+
+    // Draw the ghost body's trajectory
+    ctx.beginPath();
+    ctx.moveTo(cameraAdjustedEndX, cameraAdjustedEndY);
+    ghostTrajectory.forEach(point => {
+        ctx.lineTo(point.x - camera.x, point.y - camera.y);
+    });
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.stroke();
+
+    // Draw trajectories for the 5 closest bodies with distinct colors
+    const colors = [
+        'rgba(100, 150, 255, 0.7)', // Blue
+        'rgba(100, 255, 150, 0.7)', // Green
+        'rgba(255, 150, 100, 0.7)', // Orange
+        'rgba(200, 100, 255, 0.7)', // Purple
+        'rgba(255, 255, 100, 0.7)'  // Yellow
+    ];
+    
+    let colorIndex = 0;
+    for (const trajectory of closestBodiesTrajectories.values()) {
+        if (trajectory.length > 0) {
+            ctx.beginPath();
+            const firstPoint = trajectory[0];
+            ctx.moveTo(firstPoint.x - camera.x, firstPoint.y - camera.y);
+            trajectory.forEach(point => {
+                ctx.lineTo(point.x - camera.x, point.y - camera.y);
+            });
+            ctx.strokeStyle = colors[colorIndex % colors.length];
+            ctx.stroke();
+            colorIndex++;
+        }
+    }
+  }
 }
+
 
 function endDragHandler(e) {
   e.preventDefault();

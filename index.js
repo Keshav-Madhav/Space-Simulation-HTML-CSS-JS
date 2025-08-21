@@ -529,7 +529,7 @@ function draw() {
 
   // Draw trajectory if dragging
   if (startDrag && endDrag) {
-    drawTrajectory(startDrag.x, startDrag.y, endDrag.x, endDrag.y);
+    drawTrajectory(startDrag.x, startDrag.y, endDrag.x, endDrag.y, physicsSystem);
   }
 
   ctx.restore();
