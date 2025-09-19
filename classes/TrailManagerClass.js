@@ -1,4 +1,7 @@
 // Trail manager for handling all celestial body trails
+import { screenToWorldCoordinates, worldToScreenCoordinates } from "../functions/utils.js";
+
+// Trail manager for handling all celestial body trails with view culling & Path2D batching
 class TrailManager {
   /**
    * Creates a trail manager that handles trails for all bodies
@@ -19,7 +22,21 @@ class TrailManager {
      * color: string
      * }>} trails
      */
-    this.trails = new Map();
+  this.trails = new Map();
+
+  // Track previous head positions for change detection (bodyId -> lastHeadIndex)
+  this._lastHeads = new Map();
+
+    // Throttling state
+    this._lastRenderTime = 0; // ms timestamp of last trail draw
+    this._baseRenderInterval = 100; // default 10Hz
+    this._renderInterval = this._baseRenderInterval;
+    this._lastCameraX = null;
+    this._lastCameraY = null;
+
+    // Adaptive decimation configuration
+    this._minPixelSeg = 2;      // Minimum on-screen pixel distance between rendered trail vertices
+    this._maxDecimation = 8;    // Hard cap on skipping factor
   }
 
   /**
@@ -33,7 +50,8 @@ class TrailManager {
         positions: new Float32Array(this.MAX_POINTS * 2), // x,y pairs
         head: 0,
         isFull: false,
-        color: trailColor
+        color: trailColor,
+        lastDrawnHead: -1 // for point-change detection
       });
     }
   }
@@ -96,60 +114,107 @@ class TrailManager {
    * @param {Object} camera Camera position
    */
   drawTrails(camera) {
-    this.context.clearRect(0, 0, canvas.width, canvas.height);
-    
     if (!showTrailsIsON) return;
 
-    this.context.save();
-    this.context.translate(canvas.width / 2, canvas.height / 2);
-    this.context.scale(zoomFactor, zoomFactor);
-    this.context.translate(-canvas.width / 2, -canvas.height / 2);
+    // Decide dynamic render interval based on zoom & body/trail count
+    const bodyCount = celestialBodies.length || 1;
+    // More bodies or high zoom => lower interval (more frequent updates)
+    const zoomWeight = Math.min(zoomFactor, 2); // clamp influence
+    const densityFactor = Math.min(bodyCount / 200, 1); // saturate at 200 bodies
+    // Interpolate between 30ms (≈33fps) and base interval * 2 depending on zoom & density
+    const fastBound = 30;
+    const slowBound = this._baseRenderInterval * 2; // allow slower than base if far out & sparse
+    // When zoomed in & dense -> fastBound, else approach slowBound
+    const blend = 1 - ((zoomWeight / 2) * 0.6 + densityFactor * 0.4); // 0..1
+    this._renderInterval = fastBound + (slowBound - fastBound) * Math.min(Math.max(blend, 0), 1);
 
-    // Set common line properties
+    const now = performance.now();
+    const cameraMoved = this._lastCameraX !== camera.x || this._lastCameraY !== camera.y;
+
+    // Determine if any trail had new points since last draw (point change detection)
+    let trailsChanged = false;
+    this.trails.forEach((trail, id) => {
+      const last = this._lastHeads.get(id);
+      if (last !== trail.head) {
+        trailsChanged = true;
+      }
+    });
+
+    this._lastRenderTime = now;
+    this._lastCameraX = camera.x;
+    this._lastCameraY = camera.y;
+
+    // Prepare world-space visible rectangle with margin
+    const topLeftWorld = screenToWorldCoordinates(0, 0);
+    const bottomRightWorld = screenToWorldCoordinates(canvas.width, canvas.height);
+    const margin = 120 / zoomFactor;
+    const visMinX = topLeftWorld.x - margin;
+    const visMinY = topLeftWorld.y - margin;
+    const visMaxX = bottomRightWorld.x + margin;
+    const visMaxY = bottomRightWorld.y + margin;
+
+    this.context.clearRect(0, 0, canvas.width, canvas.height);
+    this.context.save();
     this.context.setLineDash([6, 2]);
     this.context.lineWidth = 1;
 
-    this.trails.forEach(trail => {
+    // Adaptive decimation: compute skip factor so that successive vertices are at least _minPixelSeg apart
+    const decimationBase = Math.max(1, Math.round(1 / Math.max(zoomFactor, 0.0001))); // more skip when zoomed out
+
+    this.trails.forEach((trail, id) => {
       const positions = trail.positions;
-      
-      // Calculate number of points to draw
-      const numPoints = trail.isFull ? positions.length : trail.head;
-      if (numPoints < 4) return; // Need at least 2 points (4 values) to draw
+      const total = trail.isFull ? positions.length : trail.head;
+      if (total < 4) { this._lastHeads.set(id, trail.head); return; }
+      const startIdx = trail.isFull ? trail.head : 0;
 
-      this.context.strokeStyle = trail.color;
-      this.context.beginPath();
+      const path = new Path2D();
+      let drawing = false;
+      let lastScreenX = 0, lastScreenY = 0;
+      let skipAccumulator = 0;
+      let lastPlottedSX = null, lastPlottedSY = null;
 
-      // Start from oldest point if buffer is full
-      let startIdx = trail.isFull ? trail.head : 0;
-      
-      // Move to first point
-      this.context.moveTo(
-        positions[startIdx] - camera.x,
-        positions[startIdx + 1] - camera.y
-      );
+      // Dynamic decimation factor refined by on-screen segment length
+      const maxSkip = this._maxDecimation;
+      const decimation = Math.min(decimationBase, maxSkip);
 
-      // Draw the trail in chronological order
-      for (let i = 2; i < numPoints; i += 2) {
+      for (let i = 0; i < total; i += 2) {
+        // Apply coarse decimation first
+        if (decimation > 1 && ((i/2) % decimation) !== 0) continue;
         const idx = (startIdx + i) % positions.length;
-        this.context.lineTo(
-          positions[idx] - camera.x,
-          positions[idx + 1] - camera.y
-        );
+        const wx = positions[idx];
+        const wy = positions[idx + 1];
+        const inView = wx >= visMinX && wx <= visMaxX && wy >= visMinY && wy <= visMaxY;
+        if (!inView) { drawing = false; continue; }
+        const { x: sx, y: sy } = worldToScreenCoordinates(wx, wy);
+        if (lastPlottedSX !== null) {
+          const dx = sx - lastPlottedSX;
+          const dy = sy - lastPlottedSY;
+          const distSq = dx*dx + dy*dy;
+          if (distSq < this._minPixelSeg * this._minPixelSeg) {
+            // Too close on screen; skip to avoid oversampling
+            continue;
+          }
+        }
+        if (!drawing) { path.moveTo(sx, sy); drawing = true; }
+        else { path.lineTo(sx, sy); }
+        lastPlottedSX = sx; lastPlottedSY = sy;
+        lastScreenX = sx; lastScreenY = sy;
       }
 
-      this.context.stroke();
+      this.context.strokeStyle = trail.color;
+      this.context.stroke(path);
+      this._lastHeads.set(id, trail.head);
 
-      // Debug points can be toggled on/off
       if (showDebugPoints) {
         this.context.fillStyle = trail.color;
-        for (let i = 0; i < numPoints; i += 4) {
+        for (let i = 0; i < total; i += 4) {
           const idx = (startIdx + i) % positions.length;
-          const pointX = positions[idx] - camera.x;
-          const pointY = positions[idx + 1] - camera.y;
-
-          // Draw a small dot at each point
+          const wx = positions[idx];
+          const wy = positions[idx + 1];
+          if (wx < visMinX || wx > visMaxX || wy < visMinY || wy > visMaxY) continue;
+          const { x: sx, y: sy } = worldToScreenCoordinates(wx, wy);
           this.context.beginPath();
-          this.context.arc(pointX, pointY, 2, 0, Math.PI * 2);
+          this.context.arc(sx, sy, 2, 0, Math.PI * 2);
           this.context.fill();
         }
       }

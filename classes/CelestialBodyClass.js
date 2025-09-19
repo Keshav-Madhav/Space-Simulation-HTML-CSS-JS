@@ -74,6 +74,10 @@ class CelestialBody {
     
     // Generate a unique ID for this body
     this.id = crypto.randomUUID();
+
+    // Cached Path2D for body circle; rebuilt if radius changes
+    this._cachedRadius = null;
+    this._circlePath = null;
   }
 
   /**
@@ -81,18 +85,23 @@ class CelestialBody {
    * Includes body, trajectory (if enabled), labels (if enabled), and velocity indicators (if enabled).
    */
   draw() {
-    ctx.beginPath();
-    ctx.arc(this.x - camera.x, this.y - camera.y, this.radius, 0, Math.PI * 2);
+    // Build path cache if needed (radius change or first draw)
+    if (this._cachedRadius !== this.radius || !this._circlePath) {
+      this._circlePath = new Path2D();
+      this._circlePath.arc(0, 0, this.radius, 0, Math.PI * 2);
+      this._cachedRadius = this.radius;
+    }
+
+    ctx.save();
+    ctx.translate(this.x - camera.x, this.y - camera.y);
     ctx.fillStyle = this.color;
-    ctx.fill();
-    
+    ctx.fill(this._circlePath);
     if (this.color === 'rgba(0, 0, 0, 1)') {
       ctx.strokeStyle = this.trailColor;
       ctx.lineWidth = 2;
-      ctx.stroke();
+      ctx.stroke(this._circlePath);
     }
-  
-    ctx.closePath();
+    ctx.restore();
   
     if (showLabelsIsON) {
       ctx.fillStyle = this.textColor;

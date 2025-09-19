@@ -19,6 +19,8 @@ class BackgroundStar {
     this.z = Math.random() * 5 + 1;
     this.opacity = Math.random() * 0.5;
     this.speed = Math.random() * 2 + 0.5;
+    this._cachedZ = null;
+    this._starPath = null;
   }
 
   /**
@@ -47,11 +49,17 @@ class BackgroundStar {
       this.y = adjustedY + (camera.y / (this.z*8));
     }
 
-    starCtx.beginPath();
-    starCtx.arc(adjustedX, adjustedY, this.z/3, 0, Math.PI * 2);
+    // Build path cache if z (size) changed or not built
+    if (this._cachedZ !== this.z) {
+      this._starPath = new Path2D();
+      this._starPath.arc(0, 0, this.z/3, 0, Math.PI * 2);
+      this._cachedZ = this.z;
+    }
+    starCtx.save();
+    starCtx.translate(adjustedX, adjustedY);
     starCtx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
-    starCtx.fill();
-    starCtx.closePath();
+    starCtx.fill(this._starPath);
+    starCtx.restore();
   }
 }
 
