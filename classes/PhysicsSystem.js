@@ -19,20 +19,6 @@ class BHNode {
     this.bodyCount = 0;
   }
 
-  reset(x, y, width, height) {
-    this.x = x;
-    this.y = y;
-    this.width = width;
-    this.height = height;
-    this.children[0] = this.children[1] = this.children[2] = this.children[3] = null;
-    this.body = null;
-    this.totalMass = 0;
-    this.centerOfMassX = 0;
-    this.centerOfMassY = 0;
-    this.isLeaf = true;
-    this.bodyCount = 0;
-  }
-
   /**
    * Checks if a point is within this node's boundaries
    */
@@ -44,15 +30,21 @@ class BHNode {
   /**
    * Subdivides this node into four quadrants
    */
-  subdivide(nodeAllocator) {
+  subdivide() {
     const halfWidth = this.width / 2;
     const halfHeight = this.height / 2;
     // Add small overlap to prevent edge case issues
     const overlap = Math.min(halfWidth, halfHeight) * 0.001;
-    this.children[0] = nodeAllocator(this.x - overlap, this.y - overlap, halfWidth + overlap * 2, halfHeight + overlap * 2);
-    this.children[1] = nodeAllocator(this.x + halfWidth - overlap, this.y - overlap, halfWidth + overlap * 2, halfHeight + overlap * 2);
-    this.children[2] = nodeAllocator(this.x - overlap, this.y + halfHeight - overlap, halfWidth + overlap * 2, halfHeight + overlap * 2);
-    this.children[3] = nodeAllocator(this.x + halfWidth - overlap, this.y + halfHeight - overlap, halfWidth + overlap * 2, halfHeight + overlap * 2);
+
+    this.children[0] = new BHNode(this.x - overlap, this.y - overlap, 
+                                 halfWidth + overlap * 2, halfHeight + overlap * 2);
+    this.children[1] = new BHNode(this.x + halfWidth - overlap, this.y - overlap,
+                                 halfWidth + overlap * 2, halfHeight + overlap * 2);
+    this.children[2] = new BHNode(this.x - overlap, this.y + halfHeight - overlap,
+                                 halfWidth + overlap * 2, halfHeight + overlap * 2);
+    this.children[3] = new BHNode(this.x + halfWidth - overlap, this.y + halfHeight - overlap,
+                                 halfWidth + overlap * 2, halfHeight + overlap * 2);
+    
     this.isLeaf = false;
   }
 
@@ -77,26 +69,10 @@ class BHNode {
 class BarnesHutTree {
   constructor(x, y, size) {
     this.theta = 0.9;
+    this.root = new BHNode(x, y, size, size);
     this.minDistance = 20; // Minimum distance for force calculation
-    this.minDistanceSq = this.minDistance * this.minDistance;
     this.softening = 100; // Softening parameter for close encounters
-    this.softeningSq = this.softening * this.softening;
     this.adaptiveTheta = false; // Enable adaptive multipole acceptance
-    this.nodePool = [];
-    this.poolIndex = 0;
-    this.root = this._getNode(x, y, size, size);
-  }
-
-  _getNode(x, y, w, h) {
-    let node = this.nodePool[this.poolIndex];
-    if (node) {
-      node.reset(x, y, w, h);
-    } else {
-      node = new BHNode(x, y, w, h);
-      this.nodePool.push(node);
-    }
-    this.poolIndex++;
-    return node;
   }
 
   /**
@@ -126,7 +102,7 @@ class BarnesHutTree {
     if (node.isLeaf && node.body !== null) {
       const oldBody = node.body;
       node.body = null;
-      node.subdivide(this._getNode.bind(this));
+      node.subdivide();
       this._insertBody(node.children[node.getQuadrantIndex(oldBody.x, oldBody.y)], oldBody);
     }
 
@@ -151,26 +127,34 @@ class BarnesHutTree {
 
     const dx = node.centerOfMassX - body.x;
     const dy = node.centerOfMassY - body.y;
-    const distSqRaw = dx * dx + dy * dy;
-    if (distSqRaw < this.minDistanceSq) {
-      return { ax: 0, ay: 0 };
-    }
-    const distSq = distSqRaw + this.softeningSq;
-    const invDist = 1 / Math.sqrt(distSq);
-    const invDist3 = invDist * invDist * invDist;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Apply softening to prevent numerical instabilities
+    const softenedDistance = Math.sqrt(distance * distance + this.softening * this.softening);
 
     // Adaptive multipole acceptance criterion
     let effectiveTheta = this.theta;
     if (this.adaptiveTheta) {
       // Adjust theta based on the mass ratio and distance
       const massRatio = node.totalMass / body.weight;
-      const distance = 1 / invDist; // actual softened distance
-      effectiveTheta = this.theta * (1 + Math.log10(massRatio)) / (1 + Math.abs(Math.log10(distance / this.root.width)));
+      effectiveTheta = this.theta * (1 + Math.log10(massRatio)) / 
+                      (1 + Math.abs(Math.log10(distance / this.root.width)));
     }
-    if (node.isLeaf || (node.width * invDist) < effectiveTheta) {
+
+    if (node.isLeaf || (node.width / softenedDistance) < effectiveTheta) {
       const G = 0.1; // Gravitational constant
-      const scalar = G * body.weight * node.totalMass * invDist3;
-      return { ax: scalar * dx, ay: scalar * dy };
+      if (softenedDistance < this.minDistance) {
+        return { ax: 0, ay: 0 };
+      }
+
+      // Use softened force calculation
+      const force = (G * body.weight * node.totalMass) / 
+                   (softenedDistance * softenedDistance * softenedDistance);
+
+      return {
+        ax: force * dx,
+        ay: force * dy
+      };
     }
 
     // Recursively calculate forces with improved accuracy
@@ -229,8 +213,7 @@ class BarnesHutTree {
    * Clears the tree
    */
   clear() {
-    this.poolIndex = 0; // reuse nodes
-    this.root = this._getNode(this.root.x, this.root.y, this.root.width, this.root.height);
+    this.root = new BHNode(this.root.x, this.root.y, this.root.width, this.root.height);
   }
 }
 
@@ -240,50 +223,57 @@ class BarnesHutTree {
 class PhysicsSystem {
   constructor() {
     this.bhTree = null;
-    this.frameCounter = 0;
-    this.rebuildInterval = 1; // can be tuned dynamically
-    this.prevBounds = { minX: 0, minY: 0, maxX: 0, maxY: 0, size: 0 };
   }
 
   /**
    * Updates physics for all bodies using Barnes-Hut algorithm
    */
   update(bodies, checkCollisions) {
-    if (!bodies || bodies.length === 0) return;
-    this.frameCounter++;
-    const rebuild = (this.frameCounter % this.rebuildInterval) === 0 || !this.bhTree;
+    // Find bounds of all bodies
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
 
-    if (rebuild) {
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      for (let i = 0; i < bodies.length; i++) {
-        const b = bodies[i];
-        if (b.x < minX) minX = b.x;
-        if (b.y < minY) minY = b.y;
-        if (b.x > maxX) maxX = b.x;
-        if (b.y > maxY) maxY = b.y;
-      }
-      const width = maxX - minX;
-      const height = maxY - minY;
-      const size = Math.max(width, height) * 1.2;
-      if (!this.bhTree) {
-        this.bhTree = new BarnesHutTree(minX - size * 0.1, minY - size * 0.1, size);
-      } else {
-        this.bhTree.clear();
-        this.bhTree.root.reset(minX - size * 0.1, minY - size * 0.1, size, size);
-      }
-      this.prevBounds = { minX, minY, maxX, maxY, size };
-      for (let i = 0; i < bodies.length; i++) this.bhTree.insert(bodies[i]);
+    for (const body of bodies) {
+      minX = Math.min(minX, body.x);
+      minY = Math.min(minY, body.y);
+      maxX = Math.max(maxX, body.x);
+      maxY = Math.max(maxY, body.y);
     }
 
-    // Directly assign forces
-    for (let i = 0; i < bodies.length; i++) {
-      const body = bodies[i];
-      const force = this.bhTree.calculateForces(body);
+    // Create a square region that encompasses all bodies
+    const width = maxX - minX;
+    const height = maxY - minY;
+    const size = Math.max(width, height) * 1.2; // Increased padding for better boundary handling
+
+    // Create new Barnes-Hut tree instance
+    this.bhTree = new BarnesHutTree(
+      minX - size * 0.1, 
+      minY - size * 0.1, 
+      size
+    );
+
+    // Batch insert bodies for better performance
+    for (const body of bodies) {
+      this.bhTree.insert(body);
+    }
+
+    // Calculate forces with temporal coherence
+    const forces = new Map();
+    for (const body of bodies) {
+      forces.set(body, this.bhTree.calculateForces(body));
+    }
+
+    // Apply forces in a separate pass to maintain consistency
+    for (const body of bodies) {
+      const force = forces.get(body);
       body.ax = force.ax / body.weight;
       body.ay = force.ay / body.weight;
     }
 
-    if (checkCollisions && rebuild) {
+    // Handle collisions if enabled
+    if (checkCollisions) {
       this._handleCollisions(bodies);
     }
   }
