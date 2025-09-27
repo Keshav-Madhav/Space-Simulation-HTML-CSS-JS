@@ -12,7 +12,7 @@ class TrailManager {
     this.context = context;
     
     // Constants for trail capacity
-    this.MAX_POINTS = 200_000; // 1 million points per trail
+    this.MAX_POINTS = 500_000; // 500,000 points per trail
     
     /**
      * @type {Map<string, {
