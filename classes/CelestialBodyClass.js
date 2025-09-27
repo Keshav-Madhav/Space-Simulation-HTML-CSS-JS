@@ -72,6 +72,11 @@ class CelestialBody {
     this.prevX = x;
     this.prevY = y;
     
+    // Pinning functionality
+    this.isPinned = false;
+    this.pinnedX = null;
+    this.pinnedY = null;
+    
     // Generate a unique ID for this body
     this.id = crypto.randomUUID();
 
@@ -101,6 +106,14 @@ class CelestialBody {
       ctx.lineWidth = 2;
       ctx.stroke(this._circlePath);
     }
+    
+    // Draw pin indicator if body is pinned
+    if (this.isPinned) {
+      ctx.strokeStyle = 'rgba(255, 255, 0, 0.8)';
+      ctx.lineWidth = 3 / zoomFactor;
+      ctx.stroke(this._circlePath);
+    }
+    
     ctx.restore();
   
     if (showLabelsIsON) {
@@ -134,10 +147,42 @@ class CelestialBody {
     this.prevY = this.y;
   }
 
+  pin() {
+    this.isPinned = true;
+    this.pinnedX = this.x;
+    this.pinnedY = this.y;
+    // Reset velocity when pinned
+    this.dx = 0;
+    this.dy = 0;
+  }
+
+  unpin() {
+    this.isPinned = false;
+    this.pinnedX = null;
+    this.pinnedY = null;
+  }
+
+  togglePin() {
+    if (this.isPinned) {
+      this.unpin();
+    } else {
+      this.pin();
+    }
+  }
+
   /**
    * Updates the celestial body's position and velocity based on gravitational forces.
    */
   update() {
+    // If pinned, maintain position and reset velocities
+    if (this.isPinned) {
+      this.x = this.pinnedX;
+      this.y = this.pinnedY;
+      this.dx = 0;
+      this.dy = 0;
+      return;
+    }
+
     // Update position based on velocity
     this.x += this.dx;
     this.y += this.dy;

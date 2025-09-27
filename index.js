@@ -414,6 +414,36 @@ document.addEventListener('keydown', function (event) {
   if(event.key === 'z'){
     showDebugPoints = !showDebugPoints;
   }
+
+  if(event.key === 'n'){
+    // Pin/unpin the currently followed body
+    if(cameraFollowingIndex !== -1 && celestialBodies.length > 0 && cameraFollow){
+      const followedBody = celestialBodies[cameraFollowingIndex];
+      followedBody.togglePin();
+      
+      clearPrompts();
+      prompt({
+        text: followedBody.isPinned ? 
+          `${followedBody.label} is now PINNED` : 
+          `${followedBody.label} is now UNPINNED`,
+        y: canvas.height - 20,
+        vel: 20,
+        time: 0.15,
+        textSize: 16,
+        isOverRide: true
+      });
+    } else {
+      clearPrompts();
+      prompt({
+        text: "No body being followed to pin/unpin",
+        y: canvas.height - 20,
+        vel: 20,
+        time: 0.1,
+        textSize: 16,
+        isOverRide: true
+      });
+    }
+  }
 });
 
 window.addEventListener('keyup', function(e) {

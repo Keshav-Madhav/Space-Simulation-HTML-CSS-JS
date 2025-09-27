@@ -268,8 +268,15 @@ class PhysicsSystem {
     // Apply forces in a separate pass to maintain consistency
     for (const body of bodies) {
       const force = forces.get(body);
-      body.ax = force.ax / body.weight;
-      body.ay = force.ay / body.weight;
+      
+      // If body is pinned, don't apply forces to it (but it still exerts forces on others)
+      if (body.isPinned) {
+        body.ax = 0;
+        body.ay = 0;
+      } else {
+        body.ax = force.ax / body.weight;
+        body.ay = force.ay / body.weight;
+      }
     }
 
     // Handle collisions if enabled
