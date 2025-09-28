@@ -43,7 +43,7 @@ BlackHoleDensity.addEventListener('input', function() {
 BlackHoleColor.addEventListener('input', function() {
   celestialBodyValues.blackHole.color = hexToRGB(this.value);
 });
-timeScaleSlider.addEventListener('input', function() {
+timeScaleInput.addEventListener('input', function() {
   timeScale = parseFloat(this.value);
 });
 
@@ -237,6 +237,23 @@ canvas.addEventListener('dblclick', function(event) {
 });
 
 document.addEventListener('keydown', function (event) {
+  // Check if user is typing in an input field or other editable element
+  const activeElement = document.activeElement;
+  const isTyping = activeElement && (
+    activeElement.tagName === 'INPUT' ||
+    activeElement.tagName === 'TEXTAREA' ||
+    activeElement.contentEditable === 'true'
+  );
+  
+  // If user is typing, only allow certain keys (like Escape to unfocus)
+  if (isTyping) {
+    // Allow Escape key to unfocus the input
+    if (event.key === 'Escape') {
+      activeElement.blur();
+    }
+    return; // Skip all other keyboard shortcuts when typing
+  }
+
   if (keys.hasOwnProperty(event.key)) {
     keys[event.key] = true;
   } 
@@ -321,11 +338,19 @@ document.addEventListener('keydown', function (event) {
   // Increase / Decrease Time Scale
   if (event.key === '-') {
     timeScale = Math.max(0.1, timeScale - 0.1);
-    timeScaleElement.value = timeScale;
+    timeScaleInput.value = timeScale;
   }
   if (event.key === '=') {
     timeScale = Math.min(50, timeScale + 0.1);
-    timeScaleElement.value = timeScale;
+    timeScaleInput.value = timeScale;
+  }
+  if (event.key === '<') {
+    timeScale = Math.max(0.1, timeScale - 0.1);
+    timeScaleInput.value = timeScale;
+  }
+  if (event.key === '>') {
+    timeScale = Math.min(100, timeScale + 0.1);
+    timeScaleInput.value = timeScale;
   }
 
   if (event.key === 'c') {
@@ -341,6 +366,7 @@ document.addEventListener('keydown', function (event) {
       });
     } else {
       cameraFollow = !cameraFollow;
+      followCam.checked = cameraFollow;
     }
   }
 
@@ -361,13 +387,14 @@ document.addEventListener('keydown', function (event) {
 
   if (event.key === 't'){
     setupThreeBodyProblem();
-    cameraFollow = true;
+    cameraFollow = followCam.checked = true;
     cameraFollowingIndex = -1;
-    collideIsON = false;
+    collideIsON = collision.checked = false;
   }
 
   if(event.key === 'x'){
     collideIsON = !collideIsON;
+    collision.checked = collideIsON;
   }
 
   if(event.key === 'l'){
@@ -450,6 +477,19 @@ document.addEventListener('keydown', function (event) {
 });
 
 window.addEventListener('keyup', function(e) {
+  // Check if user is typing in an input field or other editable element
+  const activeElement = document.activeElement;
+  const isTyping = activeElement && (
+    activeElement.tagName === 'INPUT' ||
+    activeElement.tagName === 'TEXTAREA' ||
+    activeElement.contentEditable === 'true'
+  );
+  
+  // Skip processing if user is typing
+  if (isTyping) {
+    return;
+  }
+
   if (keys.hasOwnProperty(e.key)) {
     keys[e.key] = false;
   }
@@ -631,7 +671,7 @@ function resetEverything() {
   showFPSIsON = showFPS.checked = true;
   showVelocitiesIsON = showVelocities.checked = true;
   showLabelsIsON = showLabels.checked = true;
-  timeScaleSlider.value = timeScale = 1;
+  timeScaleInput.value = timeScale = 1;
 
   // Reset camera settings
   cameraFollow = followCam.checked = false;

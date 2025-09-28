@@ -15,7 +15,7 @@ const next = document.getElementById('next');
 const centerMass = document.getElementById('centerMass');
 const zoomMinus = document.getElementById('zoomMinus');
 const zoomPlus = document.getElementById('zoomPlus');
-const timeScaleSlider = document.getElementById('timeScale');
+const timeScaleInput = document.getElementById('timeScale');
 
 const collision = document.getElementById('collision');
 const massTransfer = document.getElementById('massTransfer');

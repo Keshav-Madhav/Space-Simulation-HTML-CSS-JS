@@ -8,10 +8,30 @@ let isFirstDrag = true;
 
 // Add shift key listeners
 document.addEventListener('keydown', (e) => {
+  // Check if user is typing in an input field
+  const activeElement = document.activeElement;
+  const isTyping = activeElement && (
+    activeElement.tagName === 'INPUT' ||
+    activeElement.tagName === 'TEXTAREA' ||
+    activeElement.contentEditable === 'true'
+  );
+  
+  if (isTyping) return;
+  
   if (e.key === 'Shift') isShiftPressed = true;
 });
 
 document.addEventListener('keyup', (e) => {
+  // Check if user is typing in an input field
+  const activeElement = document.activeElement;
+  const isTyping = activeElement && (
+    activeElement.tagName === 'INPUT' ||
+    activeElement.tagName === 'TEXTAREA' ||
+    activeElement.contentEditable === 'true'
+  );
+  
+  if (isTyping) return;
+  
   if (e.key === 'Shift') isShiftPressed = false;
 });
 
