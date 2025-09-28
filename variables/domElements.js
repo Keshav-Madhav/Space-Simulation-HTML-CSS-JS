@@ -8,6 +8,7 @@ const BlackHoleRadius = document.getElementById('BlackHoleRadius');
 const BlackHoleDensity = document.getElementById('BlackHoleDensity');
 const BlackHoleColor = document.getElementById('BlackHoleColor');
 
+const settingsMenu = document.getElementById('menu');
 const followCam = document.getElementById('followCam');
 const camSpeedElement = document.getElementById('camSpeed');
 const prev = document.getElementById('prev');

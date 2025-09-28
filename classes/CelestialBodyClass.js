@@ -90,6 +90,9 @@ class CelestialBody {
    * Includes body, trajectory (if enabled), labels (if enabled), and velocity indicators (if enabled).
    */
   draw() {
+    // Check if this body is currently being followed
+    const isFollowed = cameraFollow && cameraFollowingIndex !== -1 && 
+                      celestialBodies[cameraFollowingIndex] === this;
     // Build path cache if needed (radius change or first draw)
     if (this._cachedRadius !== this.radius || !this._circlePath) {
       this._circlePath = new Path2D();
@@ -99,8 +102,22 @@ class CelestialBody {
 
     ctx.save();
     ctx.translate(this.x - camera.x, this.y - camera.y);
+    
+    // Add glow effect for followed body
+    if (isFollowed) {
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+      ctx.shadowBlur = 15 / zoomFactor;
+    }
+    
     ctx.fillStyle = this.color;
     ctx.fill(this._circlePath);
+    
+    // Reset shadow for other elements
+    if (isFollowed) {
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+    }
+    
     if (this.color === 'rgba(0, 0, 0, 1)') {
       ctx.strokeStyle = this.trailColor;
       ctx.lineWidth = 2;
@@ -112,31 +129,52 @@ class CelestialBody {
       ctx.strokeStyle = 'rgba(255, 255, 0, 0.8)';
       ctx.lineWidth = 3 / zoomFactor;
       ctx.stroke(this._circlePath);
+      
+      // Draw pin symbol (a small line with a circle at the top)
+      const pinHeight = this.radius * 1.5;
+      const pinRadius = this.radius * 0.3;
+      
+      ctx.strokeStyle = 'rgba(255, 255, 0, 1)';
+      ctx.lineWidth = 2 / zoomFactor;
+      ctx.beginPath();
+      // Pin shaft
+      ctx.moveTo(0, -this.radius - pinHeight);
+      ctx.lineTo(0, -this.radius);
+      ctx.stroke();
+      
+      // Pin head
+      ctx.fillStyle = 'rgba(255, 255, 0, 1)';
+      ctx.beginPath();
+      ctx.arc(0, -this.radius - pinHeight, pinRadius, 0, Math.PI * 2);
+      ctx.fill();
     }
     
     ctx.restore();
   
-    if (showLabelsIsON) {
-      ctx.fillStyle = this.textColor;
+    // Always show labels for followed body, otherwise check global setting
+    if (showLabelsIsON || isFollowed) {
+      ctx.fillStyle = isFollowed ? 'rgba(255, 255, 255, 1)' : this.textColor; // Bright white for followed body
       const fontSize = zoomFactor > 0.5 ? 14 / zoomFactor : 14 * 0.6/ zoomFactor;
       ctx.font = `${fontSize}px Arial`;
       const textWidth = ctx.measureText(this.label).width;
       ctx.fillText(this.label, this.x - camera.x - textWidth / 2, this.y - camera.y + this.radius + (16/zoomFactor));
     }
   
-    if (showVelocitiesIsON) {
+    // Always show velocities for followed body, otherwise check global setting
+    if (showVelocitiesIsON || isFollowed) {
       // Calculate magnitude of velocity from dx and dy properties for a stable reading
       const velocityMagnitude = Math.sqrt(this.dx ** 2 + this.dy ** 2);
       const velocityKMPS = `${(velocityMagnitude).toFixed(2)}km/s`;
       const velocityMPS = `${(velocityMagnitude * 1000).toFixed(2)}m/s`;
     
       // Display the magnitude of velocity
-      const velocityTextWidth = ctx.measureText(velocityUnit === 'm/s' ? velocityMPS : velocityKMPS).width;
+      const velocityText = velocityUnit === 'm/s' ? velocityMPS : velocityKMPS;
+      const velocityTextWidth = ctx.measureText(velocityText).width;
       const fontSize = zoomFactor > 0.5 ? 12 / zoomFactor : 12 * 0.6/ zoomFactor;
       ctx.font = `${fontSize}px Arial`;
-      ctx.fillStyle = this.textColor;
+      ctx.fillStyle = isFollowed ? 'rgba(0, 255, 255, 1)' : this.textColor; // Cyan for followed body velocity
       ctx.fillText(
-        velocityUnit === 'm/s' ? velocityMPS : velocityKMPS,
+        velocityText,
         this.x - camera.x - velocityTextWidth / 2, 
         this.y - camera.y - this.radius - (6/zoomFactor)
       );

@@ -202,6 +202,21 @@ showStars.addEventListener('change', function() {
   }
 });
 
+// Add event listener for when the settings menu/drawer is closed
+settingsMenu.addEventListener('toggle', function(event) {
+  // When the menu is hidden/closed, unfocus any active input elements
+  if (!event.newState || event.newState === 'closed') {
+    const activeElement = document.activeElement;
+    if (activeElement && (
+      activeElement.tagName === 'INPUT' ||
+      activeElement.tagName === 'TEXTAREA' ||
+      activeElement.contentEditable === 'true'
+    )) {
+      activeElement.blur();
+    }
+  }
+});
+
 canvas.addEventListener('mousedown', startDragHandler);
 
 canvas.addEventListener('dblclick', function(event) {
@@ -625,25 +640,150 @@ function updateUI(deltaTime) {
   ctx.fillText(`Zoom Scale: ${zoomFactor}`, 10, canvas.height - 6);
   ctx.fillText(`Time Scale: ${timeScale.toFixed(1)}x`, 10, canvas.height - 34);
 
+  // Move selected body and body count to bottom left
   if(selectedBody){
     const text = `Selected Body: ${selectedBody}`;
-    ctx.fillText(text, canvas.width - ctx.measureText(text).width - 10, canvas.height - 20);
+    ctx.fillText(text, 10, canvas.height - 75);
   }
 
   if(celestialBodies.length > 0){
     const text = `Bodies: ${celestialBodies.length}`;
-    ctx.fillText(text, canvas.width - ctx.measureText(text).width - 10, window.innerHeight - 40);
+    ctx.fillText(text, 10, canvas.height - 55);
   }
 
-  if(cameraFollow){
-    const text = cameraFollowingIndex === -1 ? 'Following Center of Mass' : `Following: ${celestialBodies[cameraFollowingIndex].label}`
-    ctx.fillStyle = cameraFollowingIndex === -1 ? 'white' : celestialBodies[cameraFollowingIndex].textColor;
+  // Only show following text for center of mass (not specific bodies)
+  if(cameraFollow && cameraFollowingIndex === -1){
+    const text = 'Following Center of Mass';
+    ctx.fillStyle = 'white';
     ctx.fillText(text, canvas.width - ctx.measureText(text).width - 10, canvas.height - 6);
+  }
+
+  // Draw followed body info panel
+  if (cameraFollow && cameraFollowingIndex !== -1 && cameraFollowingIndex < celestialBodies.length) {
+    drawFollowedBodyInfo(celestialBodies[cameraFollowingIndex]);
   }
 
   showPrompts(deltaTime);
 
   if (showFPSIsON) drawFPS(canvas.width, canvas.height, ctx);
+}
+
+/**
+ * Draws detailed information panel for the currently followed body
+ * @param {CelestialBody} body - The followed celestial body
+ */
+function drawFollowedBodyInfo(body) {
+  if (!body) return;
+
+  const padding = 15;
+  const lineHeight = 20;
+  const panelWidth = 220;
+  const startX = canvas.width - panelWidth - padding;
+
+  // Calculate gravitational force being exerted on the body
+  const accelerationMagnitude = Math.sqrt(body.ax * body.ax + body.ay * body.ay);
+  const gravitationalForce = body.weight * accelerationMagnitude;
+  
+  // Calculate panel height based on content
+  const infoLines = [
+    `Name: ${body.label}`,
+    `Type: ${body.bodyType}`,
+    `Mass: ${body.weight.toFixed(2)}`,
+    `Radius: ${body.radius.toFixed(2)}`,
+    `Density: ${body.density.toFixed(2)}`,
+    `Position: (${body.x.toFixed(1)}, ${body.y.toFixed(1)})`,
+    `Velocity: ${(Math.sqrt(body.dx * body.dx + body.dy * body.dy)*(velocityUnit === 'm/s' ? 1000 : 1)).toFixed(2)} ${velocityUnit === 'm/s' ? 'm/s' : 'km/s'}`,
+    `Grav. Force: ${gravitationalForce.toFixed(3)} N`,
+  ];
+
+  const panelHeight = infoLines.length * lineHeight + padding * 2;
+  
+  // Position at bottom right corner
+  const startY = canvas.height - panelHeight - padding;
+
+  // Draw semi-transparent background
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+  ctx.fillRect(startX - padding, startY - padding, panelWidth, panelHeight);
+
+  // Draw border
+  ctx.strokeStyle = body.trailColor || 'rgba(255, 255, 255, 0.5)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(startX - padding, startY - padding, panelWidth, panelHeight);
+
+  // Draw title
+  ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+  ctx.font = 'bold 16px Arial';
+  ctx.fillText('Followed Body Info', startX, startY);
+
+  // Draw direction circle with arrow
+  const circleRadius = 15;
+  const circleX = startX + panelWidth - circleRadius - 20;
+  const circleY = startY + 5;
+  
+  // Calculate direction angle from velocity
+  const velocityMagnitude = Math.sqrt(body.dx * body.dx + body.dy * body.dy);
+  if (velocityMagnitude > 0.01) { // Only draw if there's significant movement
+    const directionAngle = Math.atan2(body.dy, body.dx);
+    
+    // Draw circle background
+    ctx.fillStyle = 'rgba(40, 40, 40, 0.8)';
+    ctx.beginPath();
+    ctx.arc(circleX, circleY, circleRadius, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Draw circle border
+    ctx.strokeStyle = body.trailColor || 'rgba(255, 255, 255, 0.7)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    
+    // Draw direction arrow
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.lineWidth = 2;
+    
+    // Arrow body (line from center towards direction)
+    const arrowLength = circleRadius * 0.6;
+    const arrowEndX = circleX + Math.cos(directionAngle) * arrowLength;
+    const arrowEndY = circleY + Math.sin(directionAngle) * arrowLength;
+    
+    ctx.beginPath();
+    ctx.moveTo(circleX, circleY);
+    ctx.lineTo(arrowEndX, arrowEndY);
+    ctx.stroke();
+    
+    // Arrow head (triangle)
+    const arrowHeadSize = 4;
+    const leftAngle = directionAngle + Math.PI * 0.75;
+    const rightAngle = directionAngle - Math.PI * 0.75;
+    
+    ctx.beginPath();
+    ctx.moveTo(arrowEndX, arrowEndY);
+    ctx.lineTo(arrowEndX + Math.cos(leftAngle) * arrowHeadSize, arrowEndY + Math.sin(leftAngle) * arrowHeadSize);
+    ctx.lineTo(arrowEndX + Math.cos(rightAngle) * arrowHeadSize, arrowEndY + Math.sin(rightAngle) * arrowHeadSize);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Draw info lines
+  ctx.font = '14px Arial';
+  ctx.fillStyle = 'rgba(200, 200, 200, 1)';
+  
+  infoLines.forEach((line, index) => {
+    const y = startY + (index + 1.5) * lineHeight;
+    
+    // Special coloring for certain properties
+    if (line.startsWith('Velocity:')) {
+      ctx.fillStyle = 'rgba(0, 255, 255, 1)';
+    } else if (line.startsWith('Grav. Force:')) {
+      ctx.fillStyle = 'rgba(255, 128, 0, 1)'; // Orange for gravitational force
+    } else if (line.startsWith('Type:')) {
+      ctx.fillStyle = body.textColor || 'rgba(200, 200, 200, 1)';
+    } else {
+      ctx.fillStyle = 'rgba(200, 200, 200, 1)';
+    }
+    
+    ctx.fillText(line, startX, y);
+  });
 }
 
 // Reset all celestial bodies and settings
