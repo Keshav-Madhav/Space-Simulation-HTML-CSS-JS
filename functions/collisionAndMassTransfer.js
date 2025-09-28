@@ -57,7 +57,10 @@ const bodyCollide = (body1, body2) => {
       }
   }
 
-  massTransfer(body1, body2);
+  // Only perform mass transfer if enabled
+  if (massTransferEnabled) {
+    massTransfer(body1, body2);
+  }
 }
 
 /**

@@ -80,6 +80,9 @@ zoomPlus.addEventListener('click', zoomOut);
 collision.addEventListener('change', function() {
   collideIsON = this.checked;
 });
+massTransfer.addEventListener('change', function() {
+  massTransferEnabled = this.checked;
+});
 showVelocities.addEventListener('change', function() {
   showVelocitiesIsON = this.checked;
 });

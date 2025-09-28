@@ -3,6 +3,7 @@ var endDrag = null;
 let cameraFollowingIndex = 0;
 let cameraFollow = false;
 let collideIsON = true;
+let massTransferEnabled = true; // Controls whether bodies combine/transfer mass during collisions
 let camSpeed = 5; 
 let showTrailsIsON = true;
 let showStarsIsON = true;

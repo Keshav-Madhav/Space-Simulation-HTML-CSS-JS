@@ -18,6 +18,7 @@ const zoomPlus = document.getElementById('zoomPlus');
 const timeScaleSlider = document.getElementById('timeScale');
 
 const collision = document.getElementById('collision');
+const massTransfer = document.getElementById('massTransfer');
 const showTrails = document.getElementById('showTrails');
 const showStars = document.getElementById('showStars');
 const showVelocities = document.getElementById('showVelocities');
