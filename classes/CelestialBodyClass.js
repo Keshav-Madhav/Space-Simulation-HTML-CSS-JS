@@ -87,6 +87,66 @@ class CelestialBody {
     // Cached Path2D for body circle; rebuilt if radius changes
     this._cachedRadius = null;
     this._circlePath = null;
+    
+    // Cached accretion disk gradients for black holes
+    this._accretionDiskGradient = null;
+    this._cachedAccretionRadius = null;
+  }
+
+  /**
+   * Draws the accretion disk for black holes with 3D effect.
+   * The disk is rendered in two parts - back and front - to create depth.
+   */
+  drawAccretionDisk() {
+    if (this.bodyType !== 'blackHole') return;
+    
+    const diskRadius = this.radius * 4;
+    const diskHeight = this.radius * 0.8;
+    
+    // Create or update cached gradient if radius changed
+    if (this._cachedAccretionRadius !== this.radius || !this._accretionDiskGradient) {
+      this._accretionDiskGradient = ctx.createRadialGradient(0, 0, this.radius * 1.2, 0, 0, diskRadius);
+      this._accretionDiskGradient.addColorStop(0, 'rgba(255, 140, 0, 0)'); // Transparent center
+      this._accretionDiskGradient.addColorStop(0.3, 'rgba(255, 140, 0, 0.8)'); // Orange glow
+      this._accretionDiskGradient.addColorStop(0.6, 'rgba(255, 80, 0, 0.6)'); // Red-orange
+      this._accretionDiskGradient.addColorStop(0.8, 'rgba(120, 40, 0, 0.4)'); // Dark red
+      this._accretionDiskGradient.addColorStop(1, 'rgba(60, 20, 0, 0.1)'); // Very dark edge
+      this._cachedAccretionRadius = this.radius;
+    }
+    
+    ctx.save();
+    
+    // Draw back part of the disk (behind black hole) - bottom half
+    ctx.scale(1, diskHeight / diskRadius); // Flatten to create oval
+    ctx.fillStyle = this._accretionDiskGradient;
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, diskRadius, diskRadius, 0, 0, Math.PI); // Bottom semicircle
+    ctx.fill();
+    
+    ctx.restore();
+  }
+  
+  /**
+   * Draws the front part of the accretion disk (in front of black hole).
+   */
+  drawAccretionDiskFront() {
+    if (this.bodyType !== 'blackHole') return;
+    
+    const diskRadius = this.radius * 4;
+    const diskHeight = this.radius * 0.8;
+    
+    ctx.save();
+    
+    // Draw front part of the disk (in front of black hole) - top half
+    ctx.scale(1, diskHeight / diskRadius); // Flatten to create oval
+    ctx.fillStyle = this._accretionDiskGradient;
+    ctx.globalAlpha = 0.9;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, diskRadius, diskRadius, 0, Math.PI, Math.PI * 2); // Top semicircle
+    ctx.fill();
+    
+    ctx.restore();
   }
 
   /**
@@ -107,20 +167,31 @@ class CelestialBody {
     ctx.save();
     ctx.translate(this.x - camera.x, this.y - camera.y);
     
-    // Add glow effect for followed body
+    // Draw back part of accretion disk for black holes (behind the body)
+    this.drawAccretionDisk();
+    
+    // Add glow effect for followed body or stars
     if (isFollowed) {
       ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
       ctx.shadowBlur = 15 / zoomFactor;
+    } else if (this.bodyType === 'star') {
+      // Add much stronger glow to all stars
+      ctx.shadowColor = this.color.replace('1)', '0.9)'); // Use star color with higher opacity
+      ctx.shadowBlur = this.radius * 2.5 / zoomFactor; // Much larger glow radius
     }
     
     ctx.fillStyle = this.color;
+    
     ctx.fill(this._circlePath);
     
     // Reset shadow for other elements
-    if (isFollowed) {
+    if (isFollowed || this.bodyType === 'star') {
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
     }
+    
+    // Draw front part of accretion disk for black holes (in front of the body)
+    this.drawAccretionDiskFront();
     
     if (this.color === 'rgba(0, 0, 0, 1)') {
       ctx.strokeStyle = this.trailColor;
