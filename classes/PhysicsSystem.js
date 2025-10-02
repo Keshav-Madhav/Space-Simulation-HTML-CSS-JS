@@ -228,7 +228,7 @@ class PhysicsSystem {
   /**
    * Updates physics for all bodies using Barnes-Hut algorithm
    */
-  update(bodies, checkCollisions) {
+  update(bodies, checkCollisions, timeStep = 1.0) {
     // Find bounds of all bodies
     let minX = Infinity;
     let minY = Infinity;

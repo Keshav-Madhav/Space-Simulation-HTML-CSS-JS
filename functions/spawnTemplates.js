@@ -1,5 +1,5 @@
 import { CelestialBody } from "../classes/CelestialBodyClass.js";
-import { screenToWorldCoordinates } from "./utils.js";
+import { screenToWorldCoordinates, calculateOrbitalVelocity, createOrbitalVelocity } from "./utils.js";
 
 /** 
  * Sets up a three-body problem with three planets in an equilateral triangle formation.
@@ -354,26 +354,31 @@ function spawnGalaxy() {
 }
 
 function spawnDeterministicTestSystem() {
-  const fixedBodies = [
-    {
-      bodyType: 'star',
-      radius: 40,
-      density: 15,
-      x: 0,
-      y: 0,
-      dx: 0,
-      dy: 0,
-      color: { r: 255, g: 200, b: 0 },
-      label: 'T-Star'
-    },
+  // Create central star first
+  const centralStar = new CelestialBody({
+    bodyType: 'star',
+    radius: 40,
+    density: 15,
+    x: 0,
+    y: 0,
+    dx: 0,
+    dy: 0,
+    color: { r: 255, g: 200, b: 0 },
+    label: 'T-Star'
+  });
+  celestialBodies.push(centralStar);
+
+  // Calculate central star mass for orbital mechanics
+  const centralMass = centralStar.weight;
+
+  // Define planets with positions, calculate proper orbital velocities
+  const planetDefinitions = [
     {
       bodyType: 'planet',
       radius: 6,
       density: 2,
       x: 1200,
       y: 0,
-      dx: 0,
-      dy: -16,
       color: { r: 180, g: 200, b: 255 },
       label: 'T-P1'
     },
@@ -383,8 +388,6 @@ function spawnDeterministicTestSystem() {
       density: 1.2,
       x: 0,
       y: -2000,
-      dx: 13,
-      dy: 0,
       color: { r: 255, g: 150, b: 150 },
       label: 'T-P2'
     },
@@ -394,14 +397,17 @@ function spawnDeterministicTestSystem() {
       density: 0.8,
       x: -1800,
       y: 800,
-      dx: 13,
-      dy: 8,
       color: { r: 200, g: 255, b: 200 },
       label: 'T-P3'
     },
   ];
 
-  fixedBodies.forEach(def => {
+  // Create planets with calculated orbital velocities
+  planetDefinitions.forEach(def => {
+    const distance = Math.sqrt(def.x * def.x + def.y * def.y);
+    const orbitalSpeed = calculateOrbitalVelocity(centralMass, distance);
+    const velocity = createOrbitalVelocity(0, 0, def.x, def.y, orbitalSpeed);
+
     celestialBodies.push(
       new CelestialBody({
         bodyType: def.bodyType,
@@ -409,8 +415,8 @@ function spawnDeterministicTestSystem() {
         density: def.density,
         x: def.x,
         y: def.y,
-        dx: def.dx,
-        dy: def.dy,
+        dx: velocity.dx,
+        dy: velocity.dy,
         color: def.color,
         label: def.label
       })

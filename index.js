@@ -556,13 +556,32 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   if (!isPaused) {
-    for (let i = 0; i < timeScale; i++) {
-      // Update physics system (handles collisions and attraction forces between bodies using Barnes-Hut algorithm)
-      physicsSystem.update(celestialBodies, collideIsON);
+    // Calculate effective timestep with time scaling and frame rate independence
+    let effectiveTimeStep = deltaTime * timeScale;
+    
+    // Limit maximum timestep to prevent instability with very high time scales
+    const maxTimeStep = 0.1; // Maximum timestep of 0.1 seconds
+    if (effectiveTimeStep > maxTimeStep) {
+      // If timestep is too large, subdivide it
+      const numSubSteps = Math.ceil(effectiveTimeStep / maxTimeStep);
+      const subTimeStep = effectiveTimeStep / numSubSteps;
       
-      // Update all bodies
+      for (let i = 0; i < numSubSteps; i++) {
+        // Update physics system (handles collisions and attraction forces between bodies using Barnes-Hut algorithm)
+        physicsSystem.update(celestialBodies, collideIsON, subTimeStep);
+        
+        // Update all bodies with the sub-timestep
+        for (let j = 0; j < celestialBodies.length; j++) {
+          celestialBodies[j].update(subTimeStep);
+        }
+      }
+    } else {
+      // Normal single timestep update
+      physicsSystem.update(celestialBodies, collideIsON, effectiveTimeStep);
+      
+      // Update all bodies with the effective timestep
       for (let j = 0; j < celestialBodies.length; j++) {
-        celestialBodies[j].update();
+        celestialBodies[j].update(effectiveTimeStep);
       }
     }
   }

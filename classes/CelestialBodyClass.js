@@ -72,6 +72,10 @@ class CelestialBody {
     this.prevX = x;
     this.prevY = y;
     
+    // Initialize acceleration components for physics system
+    this.ax = 0;
+    this.ay = 0;
+    
     // Pinning functionality
     this.isPinned = false;
     this.pinnedX = null;
@@ -210,8 +214,10 @@ class CelestialBody {
 
   /**
    * Updates the celestial body's position and velocity based on gravitational forces.
+   * Uses Leapfrog integration for energy conservation and orbital stability.
+   * @param {number} dt - Time step for integration (accounts for frame rate and time scaling)
    */
-  update() {
+  update(dt = 1.0) {
     // If pinned, maintain position and reset velocities
     if (this.isPinned) {
       this.x = this.pinnedX;
@@ -221,13 +227,17 @@ class CelestialBody {
       return;
     }
 
-    // Update position based on velocity
-    this.x += this.dx;
-    this.y += this.dy;
-
-    // Update velocity based on acceleration
-    this.dx += this.ax;
-    this.dy += this.ay;
+    // Leapfrog integration method for energy conservation
+    // This method is symplectic and maintains orbital stability much better than Euler
+    // Now properly scaled by delta time for frame rate independence
+    
+    // Update velocity first using current acceleration
+    this.dx += this.ax * dt;
+    this.dy += this.ay * dt;
+    
+    // Then update position using the new velocity
+    this.x += this.dx * dt;
+    this.y += this.dy * dt;
   }
 }
 

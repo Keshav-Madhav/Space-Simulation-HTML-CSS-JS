@@ -125,4 +125,43 @@ function findClosestBody(screenX, screenY) {
 }
 
 
-export { screenToWorldCoordinates, worldToScreenCoordinates, zoomIn, zoomOut, hexToRGB, resizeCanvas, findClosestBody };
+/**
+ * Calculates the orbital velocity needed for a circular orbit at a given distance from a central mass.
+ * Uses the formula: v = sqrt(GM/r)
+ * @param {number} centralMass - Mass of the central body
+ * @param {number} distance - Distance from the central body
+ * @param {number} G - Gravitational constant (default: 0.1 to match simulation)
+ * @returns {number} Orbital velocity magnitude
+ */
+function calculateOrbitalVelocity(centralMass, distance, G = 0.1) {
+  return Math.sqrt(G * centralMass / distance);
+}
+
+/**
+ * Creates orbital velocity components for a body orbiting around a central point.
+ * @param {number} centerX - X coordinate of the central body
+ * @param {number} centerY - Y coordinate of the central body
+ * @param {number} orbitX - X coordinate of the orbiting body
+ * @param {number} orbitY - Y coordinate of the orbiting body
+ * @param {number} orbitalSpeed - Magnitude of orbital velocity
+ * @param {boolean} clockwise - Whether to orbit clockwise (default: false for counter-clockwise)
+ * @returns {{dx: number, dy: number}} Velocity components
+ */
+function createOrbitalVelocity(centerX, centerY, orbitX, orbitY, orbitalSpeed, clockwise = false) {
+  const dx = orbitX - centerX;
+  const dy = orbitY - centerY;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  
+  if (distance === 0) return { dx: 0, dy: 0 };
+  
+  // Perpendicular direction for circular orbit
+  const perpX = clockwise ? dy / distance : -dy / distance;
+  const perpY = clockwise ? -dx / distance : dx / distance;
+  
+  return {
+    dx: perpX * orbitalSpeed,
+    dy: perpY * orbitalSpeed
+  };
+}
+
+export { screenToWorldCoordinates, worldToScreenCoordinates, zoomIn, zoomOut, hexToRGB, resizeCanvas, findClosestBody, calculateOrbitalVelocity, createOrbitalVelocity };
