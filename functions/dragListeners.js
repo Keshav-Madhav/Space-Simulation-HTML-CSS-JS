@@ -36,6 +36,11 @@ document.addEventListener('keyup', (e) => {
 });
 
 function startDragHandler(e) {
+  // Only start drag on left-click (button 0)
+  if (e.button !== 0) {
+    return;
+  }
+  
   e.preventDefault();
   if(selectedBody !== '') {
     startDrag = screenToWorldCoordinates(e.clientX, e.clientY);
@@ -56,6 +61,8 @@ function startDragHandler(e) {
   }
   canvas.addEventListener('mousemove', dragHandler);
   canvas.addEventListener('mouseup', endDragHandler);
+  canvas.addEventListener('mousedown', rightClickCancelHandler);
+  canvas.addEventListener('contextmenu', cancelDragHandler);
 }
 
 function dragHandler(e) {
@@ -86,7 +93,16 @@ function predictFullSystemTrajectory(ghostBody, existingBodies, totalTime = 1000
     const closestBodiesTrajectories = new Map();
 
     // 1. Create simulation bodies
-    const simBodies = existingBodies.map(body => new CelestialBody({ ...body }));
+    const simBodies = existingBodies.map(body => {
+      const simBody = new CelestialBody({ ...body });
+      // Preserve pinned status
+      if (body.isPinned) {
+        simBody.isPinned = true;
+        simBody.pinnedX = body.x;
+        simBody.pinnedY = body.y;
+      }
+      return simBody;
+    });
     const ghostSimBody = new CelestialBody({ ...ghostBody });
     simBodies.push(ghostSimBody);
 
@@ -127,12 +143,20 @@ function predictFullSystemTrajectory(ghostBody, existingBodies, totalTime = 1000
         
         const timeStep = Math.max(0.1, Math.min(5, 1 / (maxForce + 1e-5)));
 
-        // Update positions
+        // Update positions (respecting pinned status)
         for (const body of simBodies) {
-            body.dx += body.ax * timeStep;
-            body.dy += body.ay * timeStep;
-            body.x += body.dx * timeStep;
-            body.y += body.dy * timeStep;
+            if (body.isPinned) {
+                // Keep pinned bodies at their pinned position
+                body.x = body.pinnedX;
+                body.y = body.pinnedY;
+                body.dx = 0;
+                body.dy = 0;
+            } else {
+                body.dx += body.ax * timeStep;
+                body.dy += body.ay * timeStep;
+                body.x += body.dx * timeStep;
+                body.y += body.dy * timeStep;
+            }
         }
 
         // 4. Record trajectories
@@ -227,6 +251,17 @@ function drawTrajectory(startX, startY, endX, endY) {
 
 function endDragHandler(e) {
   e.preventDefault();
+  
+  // Only spawn body on left-click (button 0), not right-click (button 2)
+  if (e.button !== 0) {
+    startDrag = null;
+    endDrag = null;
+    canvas.removeEventListener('mousemove', dragHandler);
+    canvas.removeEventListener('mouseup', endDragHandler);
+    canvas.removeEventListener('contextmenu', cancelDragHandler);
+    return;
+  }
+  
   if (startDrag) {
     endDrag = screenToWorldCoordinates(e.clientX, e.clientY);
 
@@ -297,6 +332,48 @@ function endDragHandler(e) {
   }
   canvas.removeEventListener('mousemove', dragHandler);
   canvas.removeEventListener('mouseup', endDragHandler);
+  canvas.removeEventListener('mousedown', rightClickCancelHandler);
+  canvas.removeEventListener('contextmenu', cancelDragHandler);
+}
+
+function rightClickCancelHandler(e) {
+  // Cancel on right-click (button 2)
+  if (e.button === 2) {
+    e.preventDefault();
+    
+    // Cancel the drag operation
+    if (startDrag) {
+      prompt({
+        text: 'Launch cancelled',
+        y: canvas.height - 20,
+        vel: 20,
+        time: 0.1,
+        textSize: 16,
+        isOverRide: true
+      });
+    }
+    
+    startDrag = null;
+    endDrag = null;
+    
+    canvas.removeEventListener('mousemove', dragHandler);
+    canvas.removeEventListener('mouseup', endDragHandler);
+    canvas.removeEventListener('mousedown', rightClickCancelHandler);
+    canvas.removeEventListener('contextmenu', cancelDragHandler);
+  }
+}
+
+function cancelDragHandler(e) {
+  e.preventDefault();
+  
+  // Just prevent the context menu, the actual cancel is handled by rightClickCancelHandler
+  startDrag = null;
+  endDrag = null;
+  
+  canvas.removeEventListener('mousemove', dragHandler);
+  canvas.removeEventListener('mouseup', endDragHandler);
+  canvas.removeEventListener('mousedown', rightClickCancelHandler);
+  canvas.removeEventListener('contextmenu', cancelDragHandler);
 }
 
 export { startDragHandler, dragHandler, endDragHandler, drawTrajectory };

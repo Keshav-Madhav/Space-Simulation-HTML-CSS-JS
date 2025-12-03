@@ -126,6 +126,19 @@ input[type="color"]::-webkit-color-swatch {
   margin-top: 0;
 }
 
+.minimal-btn {
+  background-color: transparent !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+  color: white !important;
+  transition: all 0.2s ease;
+}
+
+.minimal-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
 .menu-items > hr {
   width: 95%;
   border: 1px solid rgba(255, 255, 255, 0.217);
@@ -194,4 +207,102 @@ input[type="color"]::-webkit-color-swatch {
   position: absolute;
   white-space: nowrap;
   width: 1px;
+}
+#controlsModal {
+  width: min(600px, 90vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  color: white;
+  pointer-events: none;
+  
+  /*  undo popover styles  */
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  margin: auto;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(15px);
+  padding: 2rem;
+  padding-top: 3rem;
+  border-radius: 1rem;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.8);
+  
+  /*  animate  */
+  transition: opacity 0.3s ease-out, display 0.3s ease-out allow-discrete,
+  overlay 0.3s ease-out allow-discrete;
+  opacity: 0;
+  
+  &:popover-open {
+    opacity: 1;
+    pointer-events: auto;
+
+    @starting-style {
+      opacity: 0;
+    }
+  }
+}
+
+#controlsModal h3 {
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+  text-align: center;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+  padding-bottom: 0.5rem;
+}
+
+.controls-content {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.controls-content h4 {
+  margin-top: 1.2rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  color: rgba(100, 200, 255, 1);
+  border-left: 3px solid rgba(100, 200, 255, 0.7);
+  padding-left: 0.5rem;
+  font-weight: 600;
+}
+
+.controls-content h4:first-child {
+  margin-top: 0;
+}
+
+.control-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.8rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0.4rem;
+  font-size: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: background 0.2s ease;
+}
+
+.control-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.control-item .key {
+  background: linear-gradient(135deg, rgba(100, 200, 255, 0.2), rgba(100, 150, 255, 0.15));
+  padding: 0.3rem 0.7rem;
+  border-radius: 0.3rem;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  font-size: 0.8rem;
+  color: rgba(150, 220, 255, 1);
+  border: 1px solid rgba(100, 200, 255, 0.4);
+  min-width: 90px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(100, 200, 255, 0.15);
+}
+
+.control-item .desc {
+  flex: 1;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.85);
+  padding-left: 1rem;
 }

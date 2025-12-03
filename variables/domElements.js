@@ -34,6 +34,7 @@ const solarSystem = document.getElementById('solarSystem');
 const galaxySpawn = document.getElementById('galaxySpawn');
 const reset = document.getElementById('reset');
 const deterministicTest = document.getElementById('deterministicTest');
+const showControls = document.getElementById('showControls');
 
 /** @type {HTMLCanvasElement} */
 const canvas = document.getElementById('canvas');

@@ -159,6 +159,10 @@ reset.addEventListener('click', function() {
   resetEverything();
 });
 
+showControls.addEventListener('click', function() {
+  document.getElementById('controlsModal').showPopover();
+});
+
 showTrails.addEventListener('change', function() {
   showTrailsIsON = this.checked;
   if(!showTrailsIsON){
@@ -218,6 +222,11 @@ settingsMenu.addEventListener('toggle', function(event) {
 });
 
 canvas.addEventListener('mousedown', startDragHandler);
+
+// Prevent context menu on canvas
+canvas.addEventListener('contextmenu', function(e) {
+  e.preventDefault();
+});
 
 canvas.addEventListener('dblclick', function(event) {
   const rect = canvas.getBoundingClientRect();
@@ -312,7 +321,7 @@ document.addEventListener('keydown', function (event) {
     camSpeedElement.value = 1;
   }
 
-  if(event.key === 'p'){
+  if(event.key === ' '){
     isPaused = !isPaused;
     clearPrompts();
     prompt({
@@ -323,6 +332,12 @@ document.addEventListener('keydown', function (event) {
       textSize: 16,
       isOverRide: true
     });
+  }
+
+  if (event.key === 'Escape') {
+    selectedBody = '';
+    startDrag = null;
+    endDrag = null;
   }
 
   if (event.key === '0' || event.key === '1' || event.key === '2' || event.key === '3') {
@@ -460,7 +475,7 @@ document.addEventListener('keydown', function (event) {
     showDebugPoints = !showDebugPoints;
   }
 
-  if(event.key === 'n'){
+  if(event.key === 'p'){
     // Pin/unpin the currently followed body
     if(cameraFollowingIndex !== -1 && celestialBodies.length > 0 && cameraFollow){
       const followedBody = celestialBodies[cameraFollowingIndex];
@@ -877,6 +892,13 @@ function playInstructions() {
 
   prompt({
     text: "Press C to follow a body, E/Q to cycle through bodies",
+    y: canvas.height - 50,
+    vel: 140,
+    time: 0.2
+  });
+
+  prompt({
+    text: "Press P to pin/unpin followed body, Space to pause",
     y: canvas.height - 50,
     vel: 140,
     time: 0.2

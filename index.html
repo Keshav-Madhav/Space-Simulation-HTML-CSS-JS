@@ -30,6 +30,10 @@
         <button type="button" id="reset">Reset<span>(r)</span></button>
       </div>
 
+      <div class="menu-item misc">
+        <button type="button" id="showControls" class="minimal-btn">Show All Controls</button>
+      </div>
+
       <div class="menu-item">
         <label for="collision">Body Collision<span>(x)</span></label>
         <input type="checkbox" id="collision" checked>
@@ -198,6 +202,162 @@
 
     </div>
   </nav>
+
+  <div popover id="controlsModal">
+    <button class="close-btn" popovertarget="controlsModal" popovertargetaction="hide">
+      <span aria-hidden="true">❌</span>
+      <span class="sr-only">Close</span>
+    </button>
+
+    <h3>Controls & Keybinds</h3>
+    
+    <div class="controls-content">
+      <h4>Body Selection & Placement</h4>
+      <div class="control-item">
+        <span class="key">0 / ESC</span>
+        <span class="desc">Deselect body</span>
+      </div>
+      <div class="control-item">
+        <span class="key">1</span>
+        <span class="desc">Select Planet</span>
+      </div>
+      <div class="control-item">
+        <span class="key">2</span>
+        <span class="desc">Select Star</span>
+      </div>
+      <div class="control-item">
+        <span class="key">3</span>
+        <span class="desc">Select Black Hole</span>
+      </div>
+      <div class="control-item">
+        <span class="key">Click</span>
+        <span class="desc">Place selected body</span>
+      </div>
+      <div class="control-item">
+        <span class="key">Click + Drag</span>
+        <span class="desc">Launch body with velocity</span>
+      </div>
+      <div class="control-item">
+        <span class="key">Right Click</span>
+        <span class="desc">Cancel launch/drag</span>
+      </div>
+
+      <h4>Camera Controls</h4>
+      <div class="control-item">
+        <span class="key">W A S D</span>
+        <span class="desc">Move camera</span>
+      </div>
+      <div class="control-item">
+        <span class="key">↑ ↓ ← →</span>
+        <span class="desc">Move camera</span>
+      </div>
+      <div class="control-item">
+        <span class="key">Shift</span>
+        <span class="desc">Fast camera movement (hold)</span>
+      </div>
+      <div class="control-item">
+        <span class="key">Ctrl</span>
+        <span class="desc">Slow camera movement (hold)</span>
+      </div>
+      <div class="control-item">
+        <span class="key">Scroll</span>
+        <span class="desc">Zoom in/out</span>
+      </div>
+      <div class="control-item">
+        <span class="key">Click + Drag</span>
+        <span class="desc">Pan camera (when no body selected)</span>
+      </div>
+
+      <h4>Body Following</h4>
+      <div class="control-item">
+        <span class="key">C</span>
+        <span class="desc">Toggle follow mode</span>
+      </div>
+      <div class="control-item">
+        <span class="key">E</span>
+        <span class="desc">Follow next body</span>
+      </div>
+      <div class="control-item">
+        <span class="key">Q</span>
+        <span class="desc">Follow previous body</span>
+      </div>
+      <div class="control-item">
+        <span class="key">P</span>
+        <span class="desc">Pin/Unpin followed body</span>
+      </div>
+      <div class="control-item">
+        <span class="key">Backspace</span>
+        <span class="desc">Delete followed body</span>
+      </div>
+
+      <h4>Simulation Controls</h4>
+      <div class="control-item">
+        <span class="key">Space</span>
+        <span class="desc">Pause/Resume simulation</span>
+      </div>
+      <div class="control-item">
+        <span class="key">- / =</span>
+        <span class="desc">Decrease/Increase time scale</span>
+      </div>
+      <div class="control-item">
+        <span class="key">&lt; / &gt;</span>
+        <span class="desc">Decrease/Increase time scale</span>
+      </div>
+      <div class="control-item">
+        <span class="key">X</span>
+        <span class="desc">Toggle collision</span>
+      </div>
+      <div class="control-item">
+        <span class="key">R</span>
+        <span class="desc">Reset simulation</span>
+      </div>
+
+      <h4>Presets & Scenarios</h4>
+      <div class="control-item">
+        <span class="key">T</span>
+        <span class="desc">Three Body Problem</span>
+      </div>
+      <div class="control-item">
+        <span class="key">K</span>
+        <span class="desc">Planet Cluster</span>
+      </div>
+      <div class="control-item">
+        <span class="key">H</span>
+        <span class="desc">Solar System</span>
+      </div>
+      <div class="control-item">
+        <span class="key">B</span>
+        <span class="desc">Binary Star System</span>
+      </div>
+      <div class="control-item">
+        <span class="key">M</span>
+        <span class="desc">Meteor Shower</span>
+      </div>
+      <div class="control-item">
+        <span class="key">G</span>
+        <span class="desc">Mini Galaxy</span>
+      </div>
+      <div class="control-item">
+        <span class="key">Y</span>
+        <span class="desc">Deterministic Test System</span>
+      </div>
+
+      <h4>Other</h4>
+      <div class="control-item">
+        <span class="key">L</span>
+        <span class="desc">Replay instructions</span>
+      </div>
+      <div class="control-item">
+        <span class="key">.</span>
+        <span class="desc">Clear prompts</span>
+      </div>
+      <div class="control-item">
+        <span class="key">Z</span>
+        <span class="desc">Toggle debug points</span>
+      </div>
+    </div>
+  </div>
+
 </body>
 <script src="./variables/constAndVars.js"></script>
 <script src="./variables/domElements.js"></script>
