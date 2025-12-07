@@ -56,3 +56,6 @@ const starCtx = starCanvas.getContext('2d');
 const trailCanvas = document.getElementById('canvas3');
 /** @type {CanvasRenderingContext2D} */
 const trailctx = trailCanvas.getContext('2d');
+
+/** @type {HTMLCanvasElement} */
+const webglCanvas = document.getElementById('webglCanvas');

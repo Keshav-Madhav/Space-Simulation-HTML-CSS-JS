@@ -86,14 +86,22 @@ const hexToRGB = (hex) => {
 
 /**
  * Resize the canvas to match the window size.
+ * @param {Object} [webglRenderer] - Optional WebGL renderer to resize
  */
-function resizeCanvas() {
+function resizeCanvas(webglRenderer) {
   canvas.width = window.innerWidth - 1;
   canvas.height = window.innerHeight - 1;
   starCanvas.width = window.innerWidth - 1;
   starCanvas.height = window.innerHeight - 1;
   trailCanvas.width = window.innerWidth - 1;
   trailCanvas.height = window.innerHeight - 1;
+  webglCanvas.width = window.innerWidth - 1;
+  webglCanvas.height = window.innerHeight - 1;
+  
+  // Resize WebGL renderer if provided
+  if (webglRenderer) {
+    webglRenderer.resize(window.innerWidth - 1, window.innerHeight - 1);
+  }
 }
 
 /**

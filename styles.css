@@ -38,6 +38,22 @@ canvas{
   position: absolute;
 }
 
+#canvas2 {
+  z-index: 1;
+}
+
+#canvas3 {
+  z-index: 2;
+}
+
+#webglCanvas {
+  z-index: 3;
+}
+
+#canvas {
+  z-index: 4;
+}
+
 .bgImage {
   width: 100%; 
   height: 100%; 

@@ -9,10 +9,14 @@ import { smoothFollow, updateCameraToFollowCenterOfMass } from "./functions/came
 import { prompt, showPrompts, clearPrompts } from "./functions/showPrompts.js";
 import { startDragHandler, drawTrajectory } from "./functions/dragListeners.js";
 import { PhysicsSystem } from "./classes/PhysicsSystem.js";
+import { WebGLRenderer } from "./classes/WebGLRenderer.js";
+
+// Create WebGL renderer for celestial body rendering
+const webglRenderer = new WebGLRenderer(webglCanvas);
 
 //resize canvas
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+window.addEventListener('resize', () => resizeCanvas(webglRenderer));
+resizeCanvas(webglRenderer);
 
 // Add event listeners to update celestial body values
 
@@ -623,6 +627,9 @@ const physicsSystem = new PhysicsSystem();
 function draw() {
   const deltaTime = getDeltaTime();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Clear WebGL canvas
+  webglRenderer.clear();
 
   if (!isPaused) {
     // Calculate effective timestep with time scaling and frame rate independence
@@ -672,7 +679,10 @@ function draw() {
     }
   }
 
-  // Apply zoom and camera transformation
+  // Set up WebGL camera transformation
+  webglRenderer.setCamera(camera.x, camera.y, zoomFactor);
+
+  // Apply zoom and camera transformation for 2D canvas (for UI elements)
   ctx.save();
   ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.scale(zoomFactor, zoomFactor);
@@ -687,18 +697,34 @@ function draw() {
     starCtx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
-  for (let i = 0; i < celestialBodies.length; i++) {
-    const body = celestialBodies[i];
-
-    // Handle trails
-    if (showTrailsIsON) {
+  // Handle trails for all bodies
+  if (showTrailsIsON) {
+    for (let i = 0; i < celestialBodies.length; i++) {
+      const body = celestialBodies[i];
       trailManager.initializeTrail(body.id, body.trailColor);
       trailManager.updateTrail(body.id, body.x, body.y, body.dx, body.dy);
     }
+  }
 
-    // Update and draw body
-    if (!isPaused) body.update();
-    body.draw();
+  // Update physics for all bodies
+  if (!isPaused) {
+    for (let i = 0; i < celestialBodies.length; i++) {
+      celestialBodies[i].update();
+    }
+  }
+  
+  // Draw ALL bodies in a single batched WebGL call (massive performance boost)
+  const followedIndex = cameraFollow && cameraFollowingIndex !== -1 ? cameraFollowingIndex : -1;
+  webglRenderer.drawAllBodies(celestialBodies, {
+    followedBodyIndex: followedIndex,
+    zoomFactor
+  });
+  
+  // Draw labels on 2D canvas (text rendering)
+  for (let i = 0; i < celestialBodies.length; i++) {
+    const body = celestialBodies[i];
+    const isFollowed = followedIndex === i;
+    body.drawLabels(isFollowed);
   }
 
   showTrailsIsON && trailManager.drawTrails(camera);
@@ -938,6 +964,9 @@ function resetEverything() {
   // Reset the trail canvas and clear all trails
   trailctx.clearRect(0, 0, canvas.width, canvas.height);
   trailManager.clearAllTrails();
+  
+  // Clear WebGL canvas
+  webglRenderer.clear();
 }
 
 function playInstructions() {

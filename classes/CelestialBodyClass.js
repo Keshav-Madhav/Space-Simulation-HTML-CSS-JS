@@ -150,8 +150,48 @@ class CelestialBody {
   }
 
   /**
-   * Draws the celestial body on the canvas.
-   * Includes body, trajectory (if enabled), labels (if enabled), and velocity indicators (if enabled).
+   * Draws the celestial body text labels and UI elements on the 2D canvas.
+   * The main body rendering is now handled by WebGL.
+   * @param {boolean} isFollowed - Whether this body is currently being followed by the camera
+   */
+  drawLabels(isFollowed = false) {
+    // Always show labels for followed body, otherwise check global setting
+    if (showLabelsIsON || isFollowed) {
+      ctx.fillStyle = isFollowed ? 'rgba(255, 255, 255, 1)' : this.textColor; // Bright white for followed body
+      const fontSize = zoomFactor > 0.5 ? 14 / zoomFactor : 14 * 0.6/ zoomFactor;
+      ctx.font = `${fontSize}px Arial`;
+      const textWidth = ctx.measureText(this.label).width;
+      ctx.fillText(this.label, this.x - camera.x - textWidth / 2, this.y - camera.y + this.radius + (16/zoomFactor));
+    }
+  
+    // Always show velocities for followed body, otherwise check global setting
+    if (showVelocitiesIsON || isFollowed) {
+      // Calculate magnitude of velocity from dx and dy properties for a stable reading
+      const velocityMagnitude = Math.sqrt(this.dx ** 2 + this.dy ** 2);
+      const velocityKMPS = `${(velocityMagnitude).toFixed(2)}km/s`;
+      const velocityMPS = `${(velocityMagnitude * 1000).toFixed(2)}m/s`;
+    
+      // Display the magnitude of velocity
+      const velocityText = velocityUnit === 'm/s' ? velocityMPS : velocityKMPS;
+      const velocityTextWidth = ctx.measureText(velocityText).width;
+      const fontSize = zoomFactor > 0.5 ? 12 / zoomFactor : 12 * 0.6/ zoomFactor;
+      ctx.font = `${fontSize}px Arial`;
+      ctx.fillStyle = isFollowed ? 'rgba(0, 255, 255, 1)' : this.textColor; // Cyan for followed body velocity
+      ctx.fillText(
+        velocityText,
+        this.x - camera.x - velocityTextWidth / 2, 
+        this.y - camera.y - this.radius - (6/zoomFactor)
+      );
+    }
+  
+    // Update previous position for the next frame
+    this.prevX = this.x;
+    this.prevY = this.y;
+  }
+
+  /**
+   * Legacy draw method for fallback to Canvas 2D rendering.
+   * @deprecated Use WebGL rendering instead with drawLabels for UI elements.
    */
   draw() {
     // Check if this body is currently being followed
@@ -226,38 +266,8 @@ class CelestialBody {
     
     ctx.restore();
   
-    // Always show labels for followed body, otherwise check global setting
-    if (showLabelsIsON || isFollowed) {
-      ctx.fillStyle = isFollowed ? 'rgba(255, 255, 255, 1)' : this.textColor; // Bright white for followed body
-      const fontSize = zoomFactor > 0.5 ? 14 / zoomFactor : 14 * 0.6/ zoomFactor;
-      ctx.font = `${fontSize}px Arial`;
-      const textWidth = ctx.measureText(this.label).width;
-      ctx.fillText(this.label, this.x - camera.x - textWidth / 2, this.y - camera.y + this.radius + (16/zoomFactor));
-    }
-  
-    // Always show velocities for followed body, otherwise check global setting
-    if (showVelocitiesIsON || isFollowed) {
-      // Calculate magnitude of velocity from dx and dy properties for a stable reading
-      const velocityMagnitude = Math.sqrt(this.dx ** 2 + this.dy ** 2);
-      const velocityKMPS = `${(velocityMagnitude).toFixed(2)}km/s`;
-      const velocityMPS = `${(velocityMagnitude * 1000).toFixed(2)}m/s`;
-    
-      // Display the magnitude of velocity
-      const velocityText = velocityUnit === 'm/s' ? velocityMPS : velocityKMPS;
-      const velocityTextWidth = ctx.measureText(velocityText).width;
-      const fontSize = zoomFactor > 0.5 ? 12 / zoomFactor : 12 * 0.6/ zoomFactor;
-      ctx.font = `${fontSize}px Arial`;
-      ctx.fillStyle = isFollowed ? 'rgba(0, 255, 255, 1)' : this.textColor; // Cyan for followed body velocity
-      ctx.fillText(
-        velocityText,
-        this.x - camera.x - velocityTextWidth / 2, 
-        this.y - camera.y - this.radius - (6/zoomFactor)
-      );
-    }
-  
-    // Update previous position for the next frame
-    this.prevX = this.x;
-    this.prevY = this.y;
+    // Draw labels using the new method
+    this.drawLabels(isFollowed);
   }
 
   pin() {
