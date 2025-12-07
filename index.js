@@ -93,6 +93,27 @@ showFPS.addEventListener('change', function() {
   showFPSIsON = this.checked;
 });
 
+// Dev mode toggles
+devModeToggle.addEventListener('click', function() {
+  devModeIsON = !devModeIsON;
+  document.querySelectorAll('.dev-item').forEach(item => {
+    item.style.display = devModeIsON ? 'flex' : 'none';
+  });
+  this.textContent = devModeIsON ? 'Disable Dev Mode (~)' : 'Enable Dev Mode (~)';
+});
+
+showBHNodes.addEventListener('change', function() {
+  showBHNodesIsON = this.checked;
+});
+
+showBHCenterOfMass.addEventListener('change', function() {
+  showBHCenterOfMassIsON = this.checked;
+});
+
+showTrailPoints.addEventListener('change', function() {
+  showTrailPointsIsON = this.checked;
+});
+
 veloctyUnit.addEventListener('click', function() {
   if(velocityUnit === 'm/s'){
     velocityUnit = 'km/s';
@@ -475,6 +496,39 @@ document.addEventListener('keydown', function (event) {
     showDebugPoints = !showDebugPoints;
   }
 
+  // Dev mode toggle with backtick/tilde key
+  if(event.key === '`' || event.key === '~'){
+    devModeIsON = !devModeIsON;
+    document.querySelectorAll('.dev-item').forEach(item => {
+      item.style.display = devModeIsON ? 'flex' : 'none';
+    });
+    devModeToggle.textContent = devModeIsON ? 'Disable Dev Mode (~)' : 'Enable Dev Mode (~)';
+    clearPrompts();
+    prompt({
+      text: devModeIsON ? 'Dev Mode: ON' : 'Dev Mode: OFF',
+      y: canvas.height - 20,
+      vel: 0,
+      time: 0.15,
+      textSize: 16,
+      isOverRide: true
+    });
+  }
+
+  // Toggle FPS display
+  if(event.key === 'f'){
+    showFPSIsON = !showFPSIsON;
+    showFPS.checked = showFPSIsON;
+    clearPrompts();
+    prompt({
+      text: showFPSIsON ? 'FPS: ON' : 'FPS: OFF',
+      y: canvas.height - 20,
+      vel: 0,
+      time: 0.15,
+      textSize: 16,
+      isOverRide: true
+    });
+  }
+
   if(event.key === 'p'){
     // Pin/unpin the currently followed body
     if(cameraFollowingIndex !== -1 && celestialBodies.length > 0 && cameraFollow){
@@ -655,6 +709,14 @@ function draw() {
   }
 
   ctx.restore();
+
+  // Draw Barnes-Hut tree visualization (after restore so it's in screen space)
+  if (devModeIsON && (showBHNodesIsON || showBHCenterOfMassIsON)) {
+    physicsSystem.drawTree(ctx, camera, zoomFactor, {
+      showNodes: showBHNodesIsON,
+      showCenterOfMass: showBHCenterOfMassIsON
+    });
+  }
 
   // Update last camera position
   camera.prevX = camera.x;
@@ -842,10 +904,20 @@ function resetEverything() {
   collideIsON = collision.checked = true;
   showTrailsIsON = showTrails.checked = true;
   showStarsIsON = showStars.checked = true;
-  showFPSIsON = showFPS.checked = true;
+  showFPSIsON = showFPS.checked = false;
   showVelocitiesIsON = showVelocities.checked = true;
   showLabelsIsON = showLabels.checked = true;
   timeScaleInput.value = timeScale = 1;
+
+  // Reset dev mode settings
+  devModeIsON = false;
+  document.querySelectorAll('.dev-item').forEach(item => {
+    item.style.display = 'none';
+  });
+  devModeToggle.textContent = 'Enable Dev Mode (~)';
+  showBHNodesIsON = showBHNodes.checked = false;
+  showBHCenterOfMassIsON = showBHCenterOfMass.checked = false;
+  showTrailPointsIsON = showTrailPoints.checked = false;
 
   // Reset camera settings
   cameraFollow = followCam.checked = false;

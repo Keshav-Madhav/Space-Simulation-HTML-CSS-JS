@@ -286,6 +286,92 @@ class PhysicsSystem {
   }
 
   /**
+   * Draws the Barnes-Hut tree visualization
+   * @param {CanvasRenderingContext2D} ctx - The canvas context
+   * @param {Object} camera - The camera object with x, y positions
+   * @param {number} zoomFactor - Current zoom level
+   * @param {Object} options - Drawing options
+   * @param {boolean} options.showNodes - Whether to draw quad boundaries
+   * @param {boolean} options.showCenterOfMass - Whether to draw center of mass indicators
+   */
+  drawTree(ctx, camera, zoomFactor, options = { showNodes: true, showCenterOfMass: true }) {
+    if (!this.bhTree || !this.bhTree.root) return;
+    if (!options.showNodes && !options.showCenterOfMass) return;
+    
+    this._drawNode(ctx, this.bhTree.root, camera, zoomFactor, 0, options);
+  }
+
+  /**
+   * Recursively draws a node and its children
+   * @param {CanvasRenderingContext2D} ctx - The canvas context
+   * @param {BHNode} node - The current node to draw
+   * @param {Object} camera - The camera object
+   * @param {number} zoomFactor - Current zoom level
+   * @param {number} depth - Current tree depth for coloring
+   * @param {Object} options - Drawing options
+   */
+  _drawNode(ctx, node, camera, zoomFactor, depth, options) {
+    if (!node) return;
+
+    // Calculate screen position with camera offset
+    const screenX = (node.x - camera.x) * zoomFactor + ctx.canvas.width / 2 * (1 - zoomFactor);
+    const screenY = (node.y - camera.y) * zoomFactor + ctx.canvas.height / 2 * (1 - zoomFactor);
+    const screenWidth = node.width * zoomFactor;
+    const screenHeight = node.height * zoomFactor;
+
+    // Color based on depth - creates a nice gradient effect
+    const hue = (depth * 40) % 360;
+    const saturation = 70;
+    const lightness = 50 + (node.isLeaf ? 10 : 0);
+    
+    // Draw quad boundary if enabled
+    if (options.showNodes) {
+      ctx.strokeStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, 0.6)`;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(screenX, screenY, screenWidth, screenHeight);
+    }
+
+    // Draw center of mass if node has mass and option is enabled
+    if (options.showCenterOfMass && node.totalMass > 0) {
+      const comScreenX = (node.centerOfMassX - camera.x) * zoomFactor + ctx.canvas.width / 2 * (1 - zoomFactor);
+      const comScreenY = (node.centerOfMassY - camera.y) * zoomFactor + ctx.canvas.height / 2 * (1 - zoomFactor);
+      
+      // Size based on depth (larger for higher-level nodes) and mass
+      // Higher level nodes (lower depth) are bigger, leaf nodes are smallest
+      const depthFactor = Math.max(1, 8 - depth); // 8 at root, decreases with depth
+      const massFactor = Math.log10(node.totalMass + 1) * 0.5;
+      const comSize = node.isLeaf ? 2 : Math.max(3, Math.min(12, depthFactor + massFactor));
+      
+      // Draw center of mass point
+      ctx.fillStyle = node.isLeaf 
+        ? `hsla(${hue}, 90%, 70%, 0.9)` 
+        : `hsla(0, 0%, 100%, 0.8)`;
+      ctx.beginPath();
+      ctx.arc(comScreenX, comScreenY, comSize, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw small cross at center of mass for better visibility (non-leaf nodes only)
+      if (!node.isLeaf) {
+        ctx.strokeStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, 0.8)`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(comScreenX - comSize - 2, comScreenY);
+        ctx.lineTo(comScreenX + comSize + 2, comScreenY);
+        ctx.moveTo(comScreenX, comScreenY - comSize - 2);
+        ctx.lineTo(comScreenX, comScreenY + comSize + 2);
+        ctx.stroke();
+      }
+    }
+
+    // Recursively draw children
+    if (!node.isLeaf) {
+      for (const child of node.children) {
+        this._drawNode(ctx, child, camera, zoomFactor, depth + 1, options);
+      }
+    }
+  }
+
+  /**
    * Handles collision detection using Barnes-Hut tree
    */
   _handleCollisions(bodies) {

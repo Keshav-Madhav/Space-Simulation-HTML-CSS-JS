@@ -27,6 +27,12 @@ const showLabels = document.getElementById('showLabels');
 const showFPS = document.getElementById('showFPS');
 const veloctyUnit = document.getElementById('velocityUnit');
 
+// Dev mode elements
+const devModeToggle = document.getElementById('devModeToggle');
+const showBHNodes = document.getElementById('showBHNodes');
+const showBHCenterOfMass = document.getElementById('showBHCenterOfMass');
+const showTrailPoints = document.getElementById('showTrailPoints');
+
 const threeBody = document.getElementById('threeBody');
 const cluster = document.getElementById('cluster');
 const lightSpeedP = document.getElementById('lightSpeedP');

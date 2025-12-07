@@ -60,11 +60,6 @@
       </div>
 
       <div class="menu-item">
-        <label for="showFPS">Show FPS</label>
-        <input type="checkbox" id="showFPS">
-      </div>
-
-      <div class="menu-item">
         <label for="timeScale">Time Scale<span>(&lt; &gt;)</span></label>
         <input type="number" id="timeScale" min="0.1" max="100" step="0.1" value="1">
       </div>
@@ -196,8 +191,35 @@
         <button type="button" id="lightSpeedP">1/1000th Light Speed Planet</button>
       </div>
 
+      <hr/>
+
+      <h5>Developer Mode</h5>
       <div class="menu-item misc">
-        <button type="button" id="deterministicTest">Deterministic Test System<span>(y)</span></button>
+        <button type="button" id="devModeToggle">Enable Dev Mode<span>(~)</span></button>
+      </div>
+
+      <div class="menu-item dev-item" style="display: none;">
+        <label for="showFPS">Show FPS<span>(f)</span></label>
+        <input type="checkbox" id="showFPS">
+      </div>
+
+      <div class="menu-item dev-item" style="display: none;">
+        <label for="showBHNodes">Barnes-Hut Nodes</label>
+        <input type="checkbox" id="showBHNodes">
+      </div>
+
+      <div class="menu-item dev-item" style="display: none;">
+        <label for="showBHCenterOfMass">Barnes-Hut Center of Mass</label>
+        <input type="checkbox" id="showBHCenterOfMass">
+      </div>
+
+      <div class="menu-item dev-item" style="display: none;">
+        <label for="showTrailPoints">Show Trail Points</label>
+        <input type="checkbox" id="showTrailPoints">
+      </div>
+
+      <div class="menu-item misc dev-item" style="display: none;">
+        <button type="button" id="deterministicTest">Deterministic Test<span>(y)</span></button>
       </div>
 
     </div>
