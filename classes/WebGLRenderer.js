@@ -44,6 +44,12 @@ class WebGLRenderer {
     this.instanceGlowIntensities = new Float32Array(this.maxInstances);
     this.instanceGlowColors = new Float32Array(this.maxInstances * 4);
     
+    // Trail rendering - max vertices for all trails combined
+    // Each line segment = 6 vertices (2 triangles forming a quad)
+    this.maxTrailVertices = 600000; // ~100k line segments
+    this.trailPositions = new Float32Array(this.maxTrailVertices * 2);
+    this.trailColors = new Float32Array(this.maxTrailVertices * 4);
+    
     // Initialize shaders and buffers
     this._initShaders();
     this._initBuffers();
@@ -317,6 +323,54 @@ class WebGLRenderer {
       }
     `;
     
+    // Line shader for trails - simple vertex coloring
+    const lineVertexShaderSource = this.isWebGL2 ? `#version 300 es
+      in vec2 a_position;
+      in vec4 a_color;
+      
+      uniform mat4 u_projection;
+      uniform mat4 u_view;
+      
+      out vec4 v_color;
+      
+      void main() {
+        gl_Position = u_projection * u_view * vec4(a_position, 0.0, 1.0);
+        v_color = a_color;
+      }
+    ` : `
+      attribute vec2 a_position;
+      attribute vec4 a_color;
+      
+      uniform mat4 u_projection;
+      uniform mat4 u_view;
+      
+      varying vec4 v_color;
+      
+      void main() {
+        gl_Position = u_projection * u_view * vec4(a_position, 0.0, 1.0);
+        v_color = a_color;
+      }
+    `;
+    
+    const lineFragmentShaderSource = this.isWebGL2 ? `#version 300 es
+      precision mediump float;
+      
+      in vec4 v_color;
+      out vec4 fragColor;
+      
+      void main() {
+        fragColor = v_color;
+      }
+    ` : `
+      precision mediump float;
+      
+      varying vec4 v_color;
+      
+      void main() {
+        gl_FragColor = v_color;
+      }
+    `;
+    
     // Ring shader for strokes and pin indicators
     const ringFragmentShaderSource = this.isWebGL2 ? `#version 300 es
       precision mediump float;
@@ -360,6 +414,7 @@ class WebGLRenderer {
     this.instancedProgram = this._createProgram(gl, instancedVertexShaderSource, instancedFragmentShaderSource);
     this.accretionProgram = this._createProgram(gl, accretionVertexShaderSource, accretionFragmentShaderSource);
     this.ringProgram = this._createProgram(gl, accretionVertexShaderSource, ringFragmentShaderSource);
+    this.lineProgram = this._createProgram(gl, lineVertexShaderSource, lineFragmentShaderSource);
     
     // Get locations for instanced program
     if (this.isWebGL2) {
@@ -417,6 +472,16 @@ class WebGLRenderer {
       radius: gl.getUniformLocation(this.ringProgram, 'u_radius'),
       color: gl.getUniformLocation(this.ringProgram, 'u_color'),
       thickness: gl.getUniformLocation(this.ringProgram, 'u_thickness')
+    };
+    
+    // Line program locations (for trails)
+    this.lineAttribLocations = {
+      position: gl.getAttribLocation(this.lineProgram, 'a_position'),
+      color: gl.getAttribLocation(this.lineProgram, 'a_color')
+    };
+    this.lineUniformLocations = {
+      projection: gl.getUniformLocation(this.lineProgram, 'u_projection'),
+      view: gl.getUniformLocation(this.lineProgram, 'u_view')
     };
   }
   
@@ -480,6 +545,10 @@ class WebGLRenderer {
       this.instanceGlowIntensityBuffer = gl.createBuffer();
       this.instanceGlowColorBuffer = gl.createBuffer();
     }
+    
+    // Trail line buffers
+    this.trailPositionBuffer = gl.createBuffer();
+    this.trailColorBuffer = gl.createBuffer();
   }
   
   resize(width, height) {
@@ -830,6 +899,279 @@ class WebGLRenderer {
       followedBodyIndex: options.isFollowed ? 0 : -1,
       zoomFactor: options.zoomFactor || 1
     });
+  }
+  
+  /**
+   * Draw all trails using WebGL - renders as thick quads for visibility
+   * @param {Map} trails - Map of trail data from TrailManager
+   * @param {Object} camera - Camera position {x, y}
+   * @param {number} zoomFactor - Current zoom level
+   * @param {Object} viewBounds - Visible area bounds {minX, minY, maxX, maxY}
+   */
+  drawTrails(trails, camera, zoomFactor, viewBounds) {
+    if (!trails || trails.size === 0) return;
+    
+    const gl = this.gl;
+    
+    // Pre-calculate view bounds with margin for culling
+    const margin = 100 / zoomFactor;
+    const visMinX = viewBounds.minX - margin;
+    const visMinY = viewBounds.minY - margin;
+    const visMaxX = viewBounds.maxX + margin;
+    const visMaxY = viewBounds.maxY + margin;
+    
+    // Decimation factor based on zoom (skip more points when zoomed out)
+    const decimation = Math.max(1, Math.round(1 / Math.max(zoomFactor, 0.01)));
+    const maxDecimation = 8;
+    const skipFactor = Math.min(decimation, maxDecimation);
+    
+    // Line thickness in world units (thicker when zoomed out for visibility)
+    const lineThickness = Math.max(1.5, 2.0 / zoomFactor);
+    
+    // Collect all visible trail segments
+    const segments = [];
+    
+    trails.forEach((trail, id) => {
+      const positions = trail.positions;
+      const total = trail.isFull ? positions.length : trail.head;
+      if (total < 4) return;
+      
+      const startIdx = trail.isFull ? trail.head : 0;
+      const color = this._parseColor(trail.color);
+      
+      let prevX = null, prevY = null;
+      let prevInView = false;
+      
+      for (let i = 0; i < total; i += 2) {
+        // Apply decimation
+        if (skipFactor > 1 && ((i / 2) % skipFactor) !== 0) continue;
+        
+        const idx = (startIdx + i) % positions.length;
+        const wx = positions[idx];
+        const wy = positions[idx + 1];
+        
+        // View culling
+        const inView = wx >= visMinX && wx <= visMaxX && wy >= visMinY && wy <= visMaxY;
+        
+        if (prevX !== null && (inView || prevInView)) {
+          // Draw line segment if either endpoint is visible
+          segments.push({
+            x1: prevX, y1: prevY,
+            x2: wx, y2: wy,
+            color: color
+          });
+        }
+        
+        prevX = wx;
+        prevY = wy;
+        prevInView = inView;
+      }
+    });
+    
+    if (segments.length === 0) return;
+    
+    // Build thick line geometry (each segment = 2 triangles = 6 vertices)
+    // This creates a quad for each line segment
+    const maxSegments = Math.floor(this.maxTrailVertices / 6);
+    const segmentCount = Math.min(segments.length, maxSegments);
+    const vertexCount = segmentCount * 6;
+    
+    for (let i = 0; i < segmentCount; i++) {
+      const seg = segments[i];
+      
+      // Calculate perpendicular direction for line thickness
+      const dx = seg.x2 - seg.x1;
+      const dy = seg.y2 - seg.y1;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      
+      if (len < 0.001) continue; // Skip zero-length segments
+      
+      // Perpendicular unit vector
+      const px = (-dy / len) * lineThickness * 0.5;
+      const py = (dx / len) * lineThickness * 0.5;
+      
+      // Quad corners
+      const x1a = seg.x1 + px, y1a = seg.y1 + py;
+      const x1b = seg.x1 - px, y1b = seg.y1 - py;
+      const x2a = seg.x2 + px, y2a = seg.y2 + py;
+      const x2b = seg.x2 - px, y2b = seg.y2 - py;
+      
+      // Two triangles per segment (6 vertices)
+      const basePos = i * 12;  // 6 vertices * 2 components
+      const baseCol = i * 24;  // 6 vertices * 4 components
+      
+      // Triangle 1: (1a, 1b, 2a)
+      this.trailPositions[basePos] = x1a;
+      this.trailPositions[basePos + 1] = y1a;
+      this.trailPositions[basePos + 2] = x1b;
+      this.trailPositions[basePos + 3] = y1b;
+      this.trailPositions[basePos + 4] = x2a;
+      this.trailPositions[basePos + 5] = y2a;
+      
+      // Triangle 2: (1b, 2b, 2a)
+      this.trailPositions[basePos + 6] = x1b;
+      this.trailPositions[basePos + 7] = y1b;
+      this.trailPositions[basePos + 8] = x2b;
+      this.trailPositions[basePos + 9] = y2b;
+      this.trailPositions[basePos + 10] = x2a;
+      this.trailPositions[basePos + 11] = y2a;
+      
+      // Colors for all 6 vertices
+      const r = seg.color[0], g = seg.color[1], b = seg.color[2], a = seg.color[3];
+      for (let v = 0; v < 6; v++) {
+        this.trailColors[baseCol + v * 4] = r;
+        this.trailColors[baseCol + v * 4 + 1] = g;
+        this.trailColors[baseCol + v * 4 + 2] = b;
+        this.trailColors[baseCol + v * 4 + 3] = a;
+      }
+    }
+    
+    // Use line program
+    gl.useProgram(this.lineProgram);
+    
+    // Upload position data
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.trailPositionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, this.trailPositions.subarray(0, vertexCount * 2), gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(this.lineAttribLocations.position);
+    gl.vertexAttribPointer(this.lineAttribLocations.position, 2, gl.FLOAT, false, 0, 0);
+    
+    // Upload color data
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.trailColorBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, this.trailColors.subarray(0, vertexCount * 4), gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(this.lineAttribLocations.color);
+    gl.vertexAttribPointer(this.lineAttribLocations.color, 4, gl.FLOAT, false, 0, 0);
+    
+    // Set uniforms
+    gl.uniformMatrix4fv(this.lineUniformLocations.projection, false, this.projectionMatrix);
+    gl.uniformMatrix4fv(this.lineUniformLocations.view, false, this.viewMatrix);
+    
+    // Draw all trail quads in ONE call!
+    gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+  }
+  
+  /**
+   * Draw trail debug points - shows individual trail vertices
+   * @param {Map} trails - Map of trail data from TrailManager
+   * @param {Object} viewBounds - Visible area bounds {minX, minY, maxX, maxY}
+   * @param {number} zoomFactor - Current zoom level
+   */
+  drawTrailPoints(trails, viewBounds, zoomFactor) {
+    if (!trails || trails.size === 0) {
+      console.log('drawTrailPoints: No trails');
+      return;
+    }
+    console.log('drawTrailPoints: Drawing', trails.size, 'trails');
+    
+    const gl = this.gl;
+    
+    // Pre-calculate view bounds with margin for culling
+    const margin = 50 / zoomFactor;
+    const visMinX = viewBounds.minX - margin;
+    const visMinY = viewBounds.minY - margin;
+    const visMaxX = viewBounds.maxX + margin;
+    const visMaxY = viewBounds.maxY + margin;
+    
+    // Point size - fixed screen-space size with cap for zoomed out view
+    const screenPixels = 2.5;  // Target screen size in pixels
+    const pointRadius = Math.min(screenPixels / zoomFactor, 5);  // Cap world size when zoomed out
+    
+    // Collect visible points
+    const points = [];
+    
+    trails.forEach((trail, id) => {
+      const positions = trail.positions;
+      const total = trail.isFull ? positions.length : trail.head;
+      if (total < 2) return;
+      
+      const startIdx = trail.isFull ? trail.head : 0;
+      const color = this._parseColor(trail.color);
+      
+      // Sample every 4th point for performance
+      for (let i = 0; i < total; i += 8) {
+        const idx = (startIdx + i) % positions.length;
+        const wx = positions[idx];
+        const wy = positions[idx + 1];
+        
+        // View culling
+        if (wx >= visMinX && wx <= visMaxX && wy >= visMinY && wy <= visMaxY) {
+          points.push({ x: wx, y: wy, color: color });
+        }
+      }
+    });
+    
+    if (points.length === 0) {
+      console.log('drawTrailPoints: No visible points');
+      return;
+    }
+    
+    console.log('drawTrailPoints: Drawing', points.length, 'points');
+    
+    // Draw points as small filled circles using the line program (simpler, works everywhere)
+    // Each point = 6 vertices (2 triangles forming a small square)
+    const verticesPerPoint = 6;
+    const maxPoints = Math.min(points.length, Math.floor(this.maxTrailVertices / verticesPerPoint));
+    
+    for (let i = 0; i < maxPoints; i++) {
+      const point = points[i];
+      const halfSize = pointRadius;
+      
+      // Create a small quad for each point
+      const basePos = i * 12;  // 6 vertices * 2 components
+      const baseCol = i * 24;  // 6 vertices * 4 components
+      
+      const x = point.x, y = point.y;
+      
+      // Triangle 1
+      this.trailPositions[basePos] = x - halfSize;
+      this.trailPositions[basePos + 1] = y - halfSize;
+      this.trailPositions[basePos + 2] = x + halfSize;
+      this.trailPositions[basePos + 3] = y - halfSize;
+      this.trailPositions[basePos + 4] = x - halfSize;
+      this.trailPositions[basePos + 5] = y + halfSize;
+      
+      // Triangle 2
+      this.trailPositions[basePos + 6] = x + halfSize;
+      this.trailPositions[basePos + 7] = y - halfSize;
+      this.trailPositions[basePos + 8] = x + halfSize;
+      this.trailPositions[basePos + 9] = y + halfSize;
+      this.trailPositions[basePos + 10] = x - halfSize;
+      this.trailPositions[basePos + 11] = y + halfSize;
+      
+      // Bright color for visibility
+      const r = point.color[0], g = point.color[1], b = point.color[2];
+      for (let v = 0; v < 6; v++) {
+        this.trailColors[baseCol + v * 4] = r;
+        this.trailColors[baseCol + v * 4 + 1] = g;
+        this.trailColors[baseCol + v * 4 + 2] = b;
+        this.trailColors[baseCol + v * 4 + 3] = 1.0;  // Full opacity
+      }
+    }
+    
+    const vertexCount = maxPoints * verticesPerPoint;
+    
+    // Use line program (simple vertex + color)
+    gl.useProgram(this.lineProgram);
+    
+    // Upload position data
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.trailPositionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, this.trailPositions.subarray(0, vertexCount * 2), gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(this.lineAttribLocations.position);
+    gl.vertexAttribPointer(this.lineAttribLocations.position, 2, gl.FLOAT, false, 0, 0);
+    
+    // Upload color data
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.trailColorBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, this.trailColors.subarray(0, vertexCount * 4), gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(this.lineAttribLocations.color);
+    gl.vertexAttribPointer(this.lineAttribLocations.color, 4, gl.FLOAT, false, 0, 0);
+    
+    // Set uniforms
+    gl.uniformMatrix4fv(this.lineUniformLocations.projection, false, this.projectionMatrix);
+    gl.uniformMatrix4fv(this.lineUniformLocations.view, false, this.viewMatrix);
+    
+    // Draw all points in ONE call!
+    gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+    
+    console.log('drawTrailPoints: Drew', vertexCount, 'vertices');
   }
 }
 

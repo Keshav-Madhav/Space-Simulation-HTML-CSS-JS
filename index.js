@@ -191,14 +191,9 @@ showControls.addEventListener('click', function() {
 showTrails.addEventListener('change', function() {
   showTrailsIsON = this.checked;
   if(!showTrailsIsON){
-    trailCanvas.style.display = 'none';
-    trailctx.clearRect(0, 0, canvas.width, canvas.height);
-    
     trailManager.clearAllTrails();
-  } else {
-    trailCanvas.style.display = 'block';
-    trailctx.clearRect(0, 0, canvas.width, canvas.height);
   }
+  // Trails are now rendered via WebGL, no need to manage trailCanvas
 });
 
 function createBackgroundStars(numStars) {
@@ -498,6 +493,15 @@ document.addEventListener('keydown', function (event) {
 
   if(event.key === 'z'){
     showDebugPoints = !showDebugPoints;
+    clearPrompts();
+    prompt({
+      text: `Trail Debug Points: ${showDebugPoints ? 'ON' : 'OFF'}`,
+      y: canvas.height - 20,
+      vel: 20,
+      time: 0.3,
+      textSize: 16,
+      isOverRide: true
+    });
   }
 
   // Dev mode toggle with backtick/tilde key
@@ -727,7 +731,24 @@ function draw() {
     body.drawLabels(isFollowed);
   }
 
-  showTrailsIsON && trailManager.drawTrails(camera);
+  // Draw trails using WebGL (much faster than Canvas 2D)
+  if (showTrailsIsON && trailManager.trails.size > 0) {
+    // Calculate view bounds in world space
+    const halfW = canvas.width / 2;
+    const halfH = canvas.height / 2;
+    const viewBounds = {
+      minX: camera.x + halfW - halfW / zoomFactor,
+      maxX: camera.x + halfW + halfW / zoomFactor,
+      minY: camera.y + halfH - halfH / zoomFactor,
+      maxY: camera.y + halfH + halfH / zoomFactor
+    };
+    webglRenderer.drawTrails(trailManager.trails, camera, zoomFactor, viewBounds);
+    
+    // Draw debug trail points if enabled (either via 'z' key or dev mode checkbox)
+    if (showDebugPoints || showTrailPointsIsON) {
+      webglRenderer.drawTrailPoints(trailManager.trails, viewBounds, zoomFactor);
+    }
+  }
 
   // Draw trajectory if dragging
   if (startDrag && endDrag) {
