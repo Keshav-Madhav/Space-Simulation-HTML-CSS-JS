@@ -1,7 +1,8 @@
 import { screenToWorldCoordinates, findClosestBody } from "./utils.js";
 import { CelestialBody } from "../classes/CelestialBodyClass.js";
-import { prompt } from "./showPrompts.js";
+import { prompt, clearPrompts } from "./showPrompts.js";
 import { PhysicsSystem } from "../classes/PhysicsSystem.js";
+import { spawnPlanetsNearMouse, setupThreeBodyProblem, spawnSolarSystem, spawnGalaxy, spawnBinaryStarSystem, spawnMeteorShower } from "./spawnTemplates.js";
 
 let isShiftPressed = false;
 let isFirstDrag = true;
@@ -42,6 +43,14 @@ function startDragHandler(e) {
   }
   
   e.preventDefault();
+  
+  // Handle preset spawning (click to spawn)
+  if(selectedPreset !== null) {
+    spawnPreset(selectedPreset);
+    selectedPreset = null; // Clear preset after spawning
+    return; // Don't start drag
+  }
+  
   if(selectedBody !== '') {
     startDrag = screenToWorldCoordinates(e.clientX, e.clientY);
   } else {
@@ -63,6 +72,97 @@ function startDragHandler(e) {
   canvas.addEventListener('mouseup', endDragHandler);
   canvas.addEventListener('mousedown', rightClickCancelHandler);
   canvas.addEventListener('contextmenu', cancelDragHandler);
+}
+
+function spawnPreset(presetKey) {
+  clearPrompts();
+  
+  switch(presetKey) {
+    case '4': // Three Body Problem
+      setupThreeBodyProblem();
+      cameraFollow = followCam.checked = true;
+      cameraFollowingIndex = -1;
+      collideIsON = collision.checked = false;
+      prompt({
+        text: 'Three Body Problem spawned',
+        y: canvas.height - 20,
+        vel: 20,
+        time: 0.3,
+        textSize: 16,
+        isOverRide: true
+      });
+      break;
+      
+    case '5': // Galaxy
+      zoomFactor = 0.15;
+      showVelocitiesIsON = showVelocities.checked = false;
+      showStarsIsON = showStars.checked = false;
+      collideIsON = collision.checked = false;
+      celestialBodies.length = 0;
+      spawnGalaxy();
+      prompt({
+        text: 'Galaxy spawned',
+        y: canvas.height - 20,
+        vel: 20,
+        time: 0.3,
+        textSize: 16,
+        isOverRide: true
+      });
+      break;
+      
+    case '6': // Solar System
+      spawnSolarSystem();
+      prompt({
+        text: 'Solar System spawned',
+        y: canvas.height - 20,
+        vel: 20,
+        time: 0.3,
+        textSize: 16,
+        isOverRide: true
+      });
+      break;
+      
+    case '7': // Binary Star System
+      spawnBinaryStarSystem();
+      prompt({
+        text: 'Binary Star System spawned',
+        y: canvas.height - 20,
+        vel: 20,
+        time: 0.3,
+        textSize: 16,
+        isOverRide: true
+      });
+      break;
+      
+    case '8': // Meteor Shower
+      spawnMeteorShower();
+      prompt({
+        text: 'Meteor Shower spawned',
+        y: canvas.height - 20,
+        vel: 20,
+        time: 0.3,
+        textSize: 16,
+        isOverRide: true
+      });
+      break;
+      
+    case '9': // Stress Test (3000 planets)
+      showTrailsIsON = showTrails.checked = false;
+      showStarsIsON = showStars.checked = false;
+      showVelocitiesIsON = showVelocities.checked = false;
+      showLabelsIsON = showLabels.checked = false;
+      showFPSIsON = showFPS.checked = true;
+      spawnPlanetsNearMouse(3000);
+      prompt({
+        text: 'Stress Test: 3000 planets spawned',
+        y: canvas.height - 20,
+        vel: 20,
+        time: 0.3,
+        textSize: 16,
+        isOverRide: true
+      });
+      break;
+  }
 }
 
 function dragHandler(e) {

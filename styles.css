@@ -124,6 +124,30 @@ input[type="color"]::-webkit-color-swatch {
 	border: none;
 }
 
+.menu-item > input[type="range"]{
+  width: 80px;
+  height: 6px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.menu-item > input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #64c8ff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 4px rgba(100, 200, 255, 0.5);
+}
+
+.menu-item > input[type="range"]::-webkit-slider-thumb:hover {
+  background: #8cd8ff;
+  box-shadow: 0 0 8px rgba(100, 200, 255, 0.8);
+}
+
 .menu-item > button[type="button"]{
   border: none;
   cursor: pointer;

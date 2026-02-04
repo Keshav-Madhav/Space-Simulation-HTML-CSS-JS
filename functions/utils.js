@@ -87,8 +87,9 @@ const hexToRGB = (hex) => {
 /**
  * Resize the canvas to match the window size.
  * @param {Object} [webglRenderer] - Optional WebGL renderer to resize
+ * @param {Object} [gravityFieldRenderer] - Optional gravity field renderer to resize
  */
-function resizeCanvas(webglRenderer) {
+function resizeCanvas(webglRenderer, gravityFieldRenderer) {
   canvas.width = window.innerWidth - 1;
   canvas.height = window.innerHeight - 1;
   starCanvas.width = window.innerWidth - 1;
@@ -101,6 +102,11 @@ function resizeCanvas(webglRenderer) {
   // Resize WebGL renderer if provided
   if (webglRenderer) {
     webglRenderer.resize(window.innerWidth - 1, window.innerHeight - 1);
+  }
+  
+  // Resize gravity field renderer if provided
+  if (gravityFieldRenderer) {
+    gravityFieldRenderer.resize(window.innerWidth - 1, window.innerHeight - 1);
   }
 }
 

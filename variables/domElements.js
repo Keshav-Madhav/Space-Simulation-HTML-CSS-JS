@@ -33,6 +33,16 @@ const showBHNodes = document.getElementById('showBHNodes');
 const showBHCenterOfMass = document.getElementById('showBHCenterOfMass');
 const showTrailPoints = document.getElementById('showTrailPoints');
 
+const showGravityGrid = document.getElementById('showGravityGrid');
+const showGravityVectors = document.getElementById('showGravityVectors');
+const showGravityHeatmap = document.getElementById('showGravityHeatmap');
+const showGravityContours = document.getElementById('showGravityContours');
+const gravityGridOpacity = document.getElementById('gravityGridOpacity');
+const gravityHeatmapOpacity = document.getElementById('gravityHeatmapOpacity');
+const gravityVectorOpacity = document.getElementById('gravityVectorOpacity');
+const gravityContourOpacity = document.getElementById('gravityContourOpacity');
+const gravityWarpStrength = document.getElementById('gravityWarpStrength');
+
 const threeBody = document.getElementById('threeBody');
 const cluster = document.getElementById('cluster');
 const lightSpeedP = document.getElementById('lightSpeedP');

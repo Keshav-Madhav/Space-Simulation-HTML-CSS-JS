@@ -10,13 +10,17 @@ import { prompt, showPrompts, clearPrompts } from "./functions/showPrompts.js";
 import { startDragHandler, drawTrajectory } from "./functions/dragListeners.js";
 import { PhysicsSystem } from "./classes/PhysicsSystem.js";
 import { WebGLRenderer } from "./classes/WebGLRenderer.js";
+import { GravityFieldRenderer } from "./classes/GravityFieldRenderer.js";
 
 // Create WebGL renderer for celestial body rendering
 const webglRenderer = new WebGLRenderer(webglCanvas);
 
+// Create gravity field renderer (shares the same WebGL canvas)
+const gravityFieldRenderer = new GravityFieldRenderer(webglCanvas);
+
 //resize canvas
-window.addEventListener('resize', () => resizeCanvas(webglRenderer));
-resizeCanvas(webglRenderer);
+window.addEventListener('resize', () => resizeCanvas(webglRenderer, gravityFieldRenderer));
+resizeCanvas(webglRenderer, gravityFieldRenderer);
 
 // Add event listeners to update celestial body values
 
@@ -116,6 +120,48 @@ showBHCenterOfMass.addEventListener('change', function() {
 
 showTrailPoints.addEventListener('change', function() {
   showTrailPointsIsON = this.checked;
+});
+
+// Gravity field visualization event listeners
+showGravityGrid.addEventListener('change', function() {
+  showGravityGridIsON = this.checked;
+});
+
+showGravityVectors.addEventListener('change', function() {
+  showGravityVectorsIsON = this.checked;
+});
+
+showGravityHeatmap.addEventListener('change', function() {
+  showGravityHeatmapIsON = this.checked;
+});
+
+showGravityContours.addEventListener('change', function() {
+  showGravityContoursIsON = this.checked;
+});
+
+gravityGridOpacity.addEventListener('input', function() {
+  gravityFieldSettings.gridOpacity = parseFloat(this.value);
+  gravityFieldRenderer.updateSettings({ gridOpacity: gravityFieldSettings.gridOpacity });
+});
+
+gravityHeatmapOpacity.addEventListener('input', function() {
+  gravityFieldSettings.heatmapOpacity = parseFloat(this.value);
+  gravityFieldRenderer.updateSettings({ heatmapOpacity: gravityFieldSettings.heatmapOpacity });
+});
+
+gravityVectorOpacity.addEventListener('input', function() {
+  gravityFieldSettings.vectorOpacity = parseFloat(this.value);
+  gravityFieldRenderer.updateSettings({ vectorOpacity: gravityFieldSettings.vectorOpacity });
+});
+
+gravityContourOpacity.addEventListener('input', function() {
+  gravityFieldSettings.contourOpacity = parseFloat(this.value);
+  gravityFieldRenderer.updateSettings({ contourOpacity: gravityFieldSettings.contourOpacity });
+});
+
+gravityWarpStrength.addEventListener('input', function() {
+  gravityFieldSettings.warpStrength = parseFloat(this.value);
+  gravityFieldRenderer.updateSettings({ warpStrength: gravityFieldSettings.warpStrength });
 });
 
 veloctyUnit.addEventListener('click', function() {
@@ -356,6 +402,7 @@ document.addEventListener('keydown', function (event) {
 
   if (event.key === 'Escape') {
     selectedBody = '';
+    selectedPreset = null;
     startDrag = null;
     endDrag = null;
   }
@@ -375,6 +422,7 @@ document.addEventListener('keydown', function (event) {
         selectedBody = 'Black Hole';
         break;
     }
+    selectedPreset = null; // Clear preset selection when selecting body type
     startDrag = null;
     endDrag = null;
   }
@@ -424,24 +472,6 @@ document.addEventListener('keydown', function (event) {
     resetEverything();
   }
 
-  if (event.key === 'k') {
-    // zoomFactor = 0.05;
-    // collideIsON = collision.checked = false;
-    showTrailsIsON = showTrails.checked = false;
-    showStarsIsON = showStars.checked = false;
-    showVelocitiesIsON = showVelocities.checked = false;
-    showLabelsIsON = showLabels.checked = false;
-    showFPSIsON = showFPS.checked = true;
-    spawnPlanetsNearMouse(1500);
-  }
-
-  if (event.key === 't'){
-    setupThreeBodyProblem();
-    cameraFollow = followCam.checked = true;
-    cameraFollowingIndex = -1;
-    collideIsON = collision.checked = false;
-  }
-
   if(event.key === 'x'){
     collideIsON = !collideIsON;
     collision.checked = collideIsON;
@@ -456,41 +486,6 @@ document.addEventListener('keydown', function (event) {
     clearPrompts();
   }
 
-  if(event.key === 'g'){
-    zoomFactor = 0.15;
-    showVelocitiesIsON = showVelocities.checked = false;
-    showStarsIsON = showStars.checked = false;
-    collideIsON = collision.checked = false;
-    celestialBodies.length = 0;
-
-    spawnGalaxy();
-  }
-
-  if(event.key === 'h'){
-    spawnSolarSystem();
-  }
-
-  if(event.key === 'b'){
-    spawnBinaryStarSystem();
-  }
-
-  if(event.key === 'm'){
-    spawnMeteorShower();
-  }
-
-  if(event.key === 'y'){
-    celestialBodies.length = 0;
-    spawnDeterministicTestSystem();
-    prompt({
-      text: 'Deterministic test system spawned',
-      y: canvas.height - 20,
-      vel: 0,
-      time: 0.2,
-      textSize: 16,
-      isOverRide: true
-    });
-  }
-
   if(event.key === 'z'){
     showDebugPoints = !showDebugPoints;
     clearPrompts();
@@ -502,6 +497,95 @@ document.addEventListener('keydown', function (event) {
       textSize: 16,
       isOverRide: true
     });
+  }
+
+  // Gravity field visualization toggles (g, h, j keys)
+  if(event.key === 'g'){
+    showGravityGridIsON = !showGravityGridIsON;
+    showGravityGrid.checked = showGravityGridIsON;
+    clearPrompts();
+    prompt({
+      text: `Gravity Grid: ${showGravityGridIsON ? 'ON' : 'OFF'}`,
+      y: canvas.height - 20,
+      vel: 20,
+      time: 0.2,
+      textSize: 16,
+      isOverRide: true
+    });
+  }
+
+  if(event.key === 'h'){
+    showGravityHeatmapIsON = !showGravityHeatmapIsON;
+    showGravityHeatmap.checked = showGravityHeatmapIsON;
+    clearPrompts();
+    prompt({
+      text: `Gravity Heatmap: ${showGravityHeatmapIsON ? 'ON' : 'OFF'}`,
+      y: canvas.height - 20,
+      vel: 20,
+      time: 0.2,
+      textSize: 16,
+      isOverRide: true
+    });
+  }
+
+  if(event.key === 'j'){
+    showGravityVectorsIsON = !showGravityVectorsIsON;
+    showGravityVectors.checked = showGravityVectorsIsON;
+    clearPrompts();
+    prompt({
+      text: `Gravity Vectors: ${showGravityVectorsIsON ? 'ON' : 'OFF'}`,
+      y: canvas.height - 20,
+      vel: 20,
+      time: 0.2,
+      textSize: 16,
+      isOverRide: true
+    });
+  }
+
+  if(event.key === 'k'){
+    showGravityContoursIsON = !showGravityContoursIsON;
+    showGravityContours.checked = showGravityContoursIsON;
+    clearPrompts();
+    prompt({
+      text: `Gravity Contours: ${showGravityContoursIsON ? 'ON' : 'OFF'}`,
+      y: canvas.height - 20,
+      vel: 20,
+      time: 0.2,
+      textSize: 16,
+      isOverRide: true
+    });
+  }
+
+  // Preset selection (4-9 keys) - click to spawn after selecting
+  if(event.key >= '4' && event.key <= '9'){
+    const presetKey = event.key;
+    if(presetDefinitions[presetKey]){
+      if(selectedPreset === presetKey){
+        // Deselect if pressing same key
+        selectedPreset = null;
+        clearPrompts();
+        prompt({
+          text: 'Preset deselected',
+          y: canvas.height - 20,
+          vel: 20,
+          time: 0.2,
+          textSize: 16,
+          isOverRide: true
+        });
+      } else {
+        selectedPreset = presetKey;
+        selectedBody = ''; // Clear body selection when selecting preset
+        clearPrompts();
+        prompt({
+          text: `Selected: ${presetDefinitions[presetKey].name} (click to spawn)`,
+          y: canvas.height - 20,
+          vel: 20,
+          time: 0.3,
+          textSize: 16,
+          isOverRide: true
+        });
+      }
+    }
   }
 
   // Dev mode toggle with backtick/tilde key
@@ -685,6 +769,48 @@ function draw() {
 
   // Set up WebGL camera transformation
   webglRenderer.setCamera(camera.x, camera.y, zoomFactor);
+  gravityFieldRenderer.setCamera(camera.x, camera.y, zoomFactor);
+
+  // Calculate view bounds for gravity field rendering
+  const halfW = canvas.width / 2;
+  const halfH = canvas.height / 2;
+  const gravityViewBounds = {
+    minX: camera.x + halfW - halfW / zoomFactor,
+    maxX: camera.x + halfW + halfW / zoomFactor,
+    minY: camera.y + halfH - halfH / zoomFactor,
+    maxY: camera.y + halfH + halfH / zoomFactor
+  };
+
+  // Draw gravity field visualizations (behind celestial bodies)
+  if (celestialBodies.length > 0) {
+    // Draw heatmap first (furthest back)
+    if (showGravityHeatmapIsON) {
+      gravityFieldRenderer.drawHeatmap(celestialBodies, gravityViewBounds, {
+        opacity: gravityFieldSettings.heatmapOpacity
+      });
+    }
+    
+    // Draw contour lines (over heatmap, under grid)
+    if (showGravityContoursIsON) {
+      gravityFieldRenderer.drawContours(celestialBodies, gravityViewBounds, {
+        opacity: gravityFieldSettings.contourOpacity
+      });
+    }
+    
+    // Draw warped grid
+    if (showGravityGridIsON) {
+      gravityFieldRenderer.drawWarpedGrid(celestialBodies, gravityViewBounds, {
+        opacity: gravityFieldSettings.gridOpacity
+      });
+    }
+    
+    // Draw field vectors
+    if (showGravityVectorsIsON) {
+      gravityFieldRenderer.drawFieldVectors(celestialBodies, gravityViewBounds, {
+        opacity: gravityFieldSettings.vectorOpacity
+      });
+    }
+  }
 
   // Apply zoom and camera transformation for 2D canvas (for UI elements)
   ctx.save();
@@ -783,10 +909,15 @@ function updateUI(deltaTime) {
   ctx.fillText(`Zoom Scale: ${zoomFactor}`, 10, canvas.height - 6);
   ctx.fillText(`Time Scale: ${timeScale.toFixed(1)}x`, 10, canvas.height - 34);
 
-  // Move selected body and body count to bottom left
+  // Move selected body/preset and body count to bottom left
   if(selectedBody){
     const text = `Selected Body: ${selectedBody}`;
     ctx.fillText(text, 10, canvas.height - 75);
+  } else if(selectedPreset !== null && presetDefinitions[selectedPreset]){
+    const text = `Selected Preset: ${presetDefinitions[selectedPreset].name} (click to spawn)`;
+    ctx.fillStyle = 'rgba(100, 200, 255, 1)';
+    ctx.fillText(text, 10, canvas.height - 75);
+    ctx.fillStyle = 'white';
   }
 
   if(celestialBodies.length > 0){
@@ -965,6 +1096,18 @@ function resetEverything() {
   showBHNodesIsON = showBHNodes.checked = false;
   showBHCenterOfMassIsON = showBHCenterOfMass.checked = false;
   showTrailPointsIsON = showTrailPoints.checked = false;
+
+  // Reset gravity field visualization settings
+  showGravityGridIsON = showGravityGrid.checked = false;
+  showGravityVectorsIsON = showGravityVectors.checked = false;
+  showGravityHeatmapIsON = showGravityHeatmap.checked = false;
+  showGravityContoursIsON = showGravityContours.checked = false;
+  gravityFieldSettings.gridOpacity = gravityGridOpacity.value = 1.0;
+  gravityFieldSettings.heatmapOpacity = gravityHeatmapOpacity.value = 0.85;
+  gravityFieldSettings.vectorOpacity = gravityVectorOpacity.value = 1.0;
+  gravityFieldSettings.contourOpacity = gravityContourOpacity.value = 0.9;
+  gravityFieldSettings.warpStrength = gravityWarpStrength.value = 1.0;
+  gravityFieldRenderer.updateSettings(gravityFieldSettings);
 
   // Reset camera settings
   cameraFollow = followCam.checked = false;

@@ -16,13 +16,37 @@ let showBHNodesIsON = false;
 let showBHCenterOfMassIsON = false;
 let showTrailPointsIsON = false;
 let velocityUnit = 'm/s';
+
+let showGravityGridIsON = false;
+let showGravityVectorsIsON = false;
+let showGravityHeatmapIsON = false;
+let showGravityContoursIsON = false;
+
+const gravityFieldSettings = {
+  gridOpacity: 1.0,
+  heatmapOpacity: 0.85,
+  vectorOpacity: 1.0,
+  contourOpacity: 0.9,
+  warpStrength: 1.0
+};
 let zoomFactor = 0.85;
 let zoomSpeed = 0.1;
 let isCameraLockedOn = false;
 let smoothedSpeed = 0;
 let selectedBody = '';
+let selectedPreset = null; // For preset selection system (4-9 keys)
 let isPaused = false;
 let timeScale = 1;
+
+// Preset definitions for number key selection
+const presetDefinitions = {
+  4: { name: 'Three Body Problem', key: '4' },
+  5: { name: 'Galaxy', key: '5' },
+  6: { name: 'Solar System', key: '6' },
+  7: { name: 'Binary Star System', key: '7' },
+  8: { name: 'Meteor Shower', key: '8' },
+  9: { name: 'Stress Test (3000)', key: '9' }
+};
 
 const cameraMoveSpeed = 1;
 

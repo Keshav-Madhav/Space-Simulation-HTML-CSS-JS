@@ -171,21 +171,69 @@
 
       <hr/>
 
-      <h5>Spawn Presets</h5>
+      <h5>Gravity Field Visualization</h5>
+      <div class="menu-item">
+        <label for="showGravityGrid">Warped Grid<span>(g)</span></label>
+        <input type="checkbox" id="showGravityGrid">
+      </div>
+
+      <div class="menu-item">
+        <label for="showGravityHeatmap">Heatmap<span>(h)</span></label>
+        <input type="checkbox" id="showGravityHeatmap">
+      </div>
+
+      <div class="menu-item">
+        <label for="showGravityVectors">Field Vectors<span>(j)</span></label>
+        <input type="checkbox" id="showGravityVectors">
+      </div>
+
+      <div class="menu-item">
+        <label for="showGravityContours">Contours<span>(k)</span></label>
+        <input type="checkbox" id="showGravityContours">
+      </div>
+
+      <div class="menu-item">
+        <label for="gravityGridOpacity">Grid Opacity</label>
+        <input type="range" id="gravityGridOpacity" min="0" max="1" step="0.05" value="1">
+      </div>
+
+      <div class="menu-item">
+        <label for="gravityHeatmapOpacity">Heatmap Opacity</label>
+        <input type="range" id="gravityHeatmapOpacity" min="0" max="1" step="0.05" value="0.85">
+      </div>
+
+      <div class="menu-item">
+        <label for="gravityVectorOpacity">Vector Opacity</label>
+        <input type="range" id="gravityVectorOpacity" min="0" max="1" step="0.05" value="1">
+      </div>
+
+      <div class="menu-item">
+        <label for="gravityContourOpacity">Contour Opacity</label>
+        <input type="range" id="gravityContourOpacity" min="0" max="1" step="0.05" value="0.9">
+      </div>
+
+      <div class="menu-item">
+        <label for="gravityWarpStrength">Warp Strength</label>
+        <input type="range" id="gravityWarpStrength" min="0.1" max="3" step="0.1" value="1">
+      </div>
+
+      <hr/>
+
+      <h5>Spawn Presets (num keys: select then click)</h5>
       <div class="menu-item misc">
-        <button type="button" id="threeBody">Three Body Problem<span>(t)</span></button>
+        <button type="button" id="threeBody">Three Body Problem<span>(4)</span></button>
       </div>
 
       <div class="menu-item misc">
-        <button type="button" id="cluster">Planet Cluster<span>(k)</span></button>
+        <button type="button" id="galaxySpawn">Mini Galaxy<span>(5)</span></button>
       </div>
 
       <div class="menu-item misc">
-        <button type="button" id="solarSystem">Solar System</button>
+        <button type="button" id="solarSystem">Solar System<span>(6)</span></button>
       </div>
 
       <div class="menu-item misc">
-        <button type="button" id="galaxySpawn">Mini Galaxy<span>(g)</span></button>
+        <button type="button" id="cluster">Planet Cluster (15)</button>
       </div>
 
       <div class="menu-item misc">
@@ -337,32 +385,46 @@
 
       <h4>Presets & Scenarios</h4>
       <div class="control-item">
-        <span class="key">T</span>
+        <span class="key">4</span>
         <span class="desc">Three Body Problem</span>
       </div>
       <div class="control-item">
-        <span class="key">K</span>
-        <span class="desc">Planet Cluster</span>
-      </div>
-      <div class="control-item">
-        <span class="key">H</span>
-        <span class="desc">Solar System</span>
-      </div>
-      <div class="control-item">
-        <span class="key">B</span>
-        <span class="desc">Binary Star System</span>
-      </div>
-      <div class="control-item">
-        <span class="key">M</span>
-        <span class="desc">Meteor Shower</span>
-      </div>
-      <div class="control-item">
-        <span class="key">G</span>
+        <span class="key">5</span>
         <span class="desc">Mini Galaxy</span>
       </div>
       <div class="control-item">
-        <span class="key">Y</span>
-        <span class="desc">Deterministic Test System</span>
+        <span class="key">6</span>
+        <span class="desc">Solar System</span>
+      </div>
+      <div class="control-item">
+        <span class="key">7</span>
+        <span class="desc">Binary Star System</span>
+      </div>
+      <div class="control-item">
+        <span class="key">8</span>
+        <span class="desc">Meteor Shower</span>
+      </div>
+      <div class="control-item">
+        <span class="key">9</span>
+        <span class="desc">Stress Test (3000 planets)</span>
+      </div>
+
+      <h4>Gravity Visualizations</h4>
+      <div class="control-item">
+        <span class="key">G</span>
+        <span class="desc">Toggle warped grid</span>
+      </div>
+      <div class="control-item">
+        <span class="key">H</span>
+        <span class="desc">Toggle heatmap</span>
+      </div>
+      <div class="control-item">
+        <span class="key">J</span>
+        <span class="desc">Toggle field vectors</span>
+      </div>
+      <div class="control-item">
+        <span class="key">K</span>
+        <span class="desc">Toggle contours</span>
       </div>
 
       <h4>Other</h4>
