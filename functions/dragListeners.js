@@ -44,6 +44,44 @@ function startDragHandler(e) {
   
   e.preventDefault();
   
+  // Handle probe mode
+  if (probeModeEnabled) {
+    const worldCoords = screenToWorldCoordinates(e.clientX, e.clientY);
+    
+    // Check for Ctrl (Windows/Linux) or Command/Meta (Mac)
+    const isModifierPressed = e.ctrlKey || e.metaKey;
+    
+    if (isModifierPressed && probe !== null) {
+      // Ctrl/Cmd+click: add waypoint for smooth transition
+      if (probe.isTransitioning) {
+        // Already transitioning - add to waypoint queue
+        probe.waypoints.push({ x: worldCoords.x, y: worldCoords.y });
+      } else {
+        // Start new transition
+        probe.startX = probe.x;
+        probe.startY = probe.y;
+        probe.targetX = worldCoords.x;
+        probe.targetY = worldCoords.y;
+        probe.isTransitioning = true;
+        probe.transitionProgress = 0;
+      }
+    } else {
+      // Regular click: place/move probe instantly (clears any waypoints)
+      probe = {
+        x: worldCoords.x,
+        y: worldCoords.y,
+        startX: worldCoords.x,
+        startY: worldCoords.y,
+        targetX: worldCoords.x,
+        targetY: worldCoords.y,
+        isTransitioning: false,
+        transitionProgress: 1,
+        waypoints: []
+      };
+    }
+    return; // Don't start body drag in probe mode
+  }
+  
   // Handle preset spawning (click to spawn)
   if(selectedPreset !== null) {
     spawnPreset(selectedPreset);

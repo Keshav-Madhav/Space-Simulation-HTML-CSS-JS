@@ -36,6 +36,11 @@ let smoothedSpeed = 0;
 let selectedBody = '';
 let selectedPreset = null; // For preset selection system (4-9 keys)
 let isPaused = false;
+
+// Probe mode variables
+let probeModeEnabled = false;
+let probe = null; // { x, y, startX, startY, targetX, targetY, isTransitioning, transitionProgress, waypoints: [] }
+const probeTransitionSpeed = 0.005; // Speed of smooth probe transition (slower for observation)
 let timeScale = 1;
 
 // Preset definitions for number key selection

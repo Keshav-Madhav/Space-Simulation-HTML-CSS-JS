@@ -482,7 +482,7 @@ function spawnBinaryStarSystem() {
   });
 
   // Add five planets orbiting the binary star system
-  const numPlanets = 5;
+  const numPlanets = 0;
   const distance = 1500;
   const speed = 4.1;
 

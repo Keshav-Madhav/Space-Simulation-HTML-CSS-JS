@@ -361,7 +361,19 @@ document.addEventListener('keydown', function (event) {
   }
 
   if (event.code === 'Backspace') {
-    if(cameraFollowingIndex !== -1 && celestialBodies.length > 0 && cameraFollow){
+    // Delete probe if in probe mode and probe exists
+    if (probeModeEnabled && probe !== null) {
+      probe = null;
+      clearPrompts();
+      prompt({
+        text: "Probe deleted",
+        y: canvas.height - 20,
+        vel: 20,
+        time: 0.2,
+        textSize: 16,
+        isOverRide: true
+      });
+    } else if(cameraFollowingIndex !== -1 && celestialBodies.length > 0 && cameraFollow){
       const removedBody = celestialBodies.splice(cameraFollowingIndex, 1);
       trailManager.clearTrail(removedBody[0].id);
       cameraFollowingIndex = 0;
@@ -407,11 +419,27 @@ document.addEventListener('keydown', function (event) {
     endDrag = null;
   }
 
-  if (event.key === '0' || event.key === '1' || event.key === '2' || event.key === '3') {
+  if (event.key === '0') {
+    // Toggle probe mode
+    probeModeEnabled = !probeModeEnabled;
+    selectedBody = '';
+    selectedPreset = null;
+    startDrag = null;
+    endDrag = null;
+    
+    clearPrompts();
+    prompt({
+      text: probeModeEnabled ? 'Probe Mode: ON (click to place probe)' : 'Probe Mode: OFF',
+      y: canvas.height - 20,
+      vel: 20,
+      time: 0.3,
+      textSize: 16,
+      isOverRide: true
+    });
+  }
+  
+  if (event.key === '1' || event.key === '2' || event.key === '3') {
     switch (event.key) {
-      case '0':
-        selectedBody = '';
-        break;
       case '1':
         selectedBody = 'Planet';
         break;
@@ -422,6 +450,7 @@ document.addEventListener('keydown', function (event) {
         selectedBody = 'Black Hole';
         break;
     }
+    probeModeEnabled = false; // Exit probe mode when selecting body
     selectedPreset = null; // Clear preset selection when selecting body type
     startDrag = null;
     endDrag = null;
@@ -908,9 +937,48 @@ function updateUI(deltaTime) {
   ctx.fillText(`(${camera.x.toFixed(2)}, ${camera.y.toFixed(2)})`, 10, canvas.height - 20);
   ctx.fillText(`Zoom Scale: ${zoomFactor}`, 10, canvas.height - 6);
   ctx.fillText(`Time Scale: ${timeScale.toFixed(1)}x`, 10, canvas.height - 34);
+  
+  // Draw probe mode indicator at top center
+  if (probeModeEnabled) {
+    const text = '[ PROBE MODE ACTIVE ]';
+    ctx.font = 'bold 16px Arial';
+    const textWidth = ctx.measureText(text).width;
+    
+    // Draw background pill
+    ctx.fillStyle = 'rgba(0, 80, 80, 0.8)';
+    const pillPadding = 12;
+    const pillHeight = 28;
+    ctx.beginPath();
+    ctx.roundRect(
+      canvas.width / 2 - textWidth / 2 - pillPadding,
+      10,
+      textWidth + pillPadding * 2,
+      pillHeight,
+      14
+    );
+    ctx.fill();
+    
+    // Draw border
+    ctx.strokeStyle = 'rgba(0, 255, 255, 0.9)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Draw text
+    ctx.fillStyle = 'rgba(0, 255, 255, 1)';
+    ctx.fillText(text, canvas.width / 2 - textWidth / 2, 30);
+    
+    ctx.font = '14px Arial';
+  }
 
   // Move selected body/preset and body count to bottom left
-  if(selectedBody){
+  if(probeModeEnabled){
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const modKey = isMac ? 'Cmd' : 'Ctrl';
+    const text = `Probe Mode (click to place, ${modKey}+click to transition)`;
+    ctx.fillStyle = 'rgba(0, 255, 255, 1)';
+    ctx.fillText(text, 10, canvas.height - 75);
+    ctx.fillStyle = 'white';
+  } else if(selectedBody){
     const text = `Selected Body: ${selectedBody}`;
     ctx.fillText(text, 10, canvas.height - 75);
   } else if(selectedPreset !== null && presetDefinitions[selectedPreset]){
@@ -936,10 +1004,586 @@ function updateUI(deltaTime) {
   if (cameraFollow && cameraFollowingIndex !== -1 && cameraFollowingIndex < celestialBodies.length) {
     drawFollowedBodyInfo(celestialBodies[cameraFollowingIndex]);
   }
+  
+  // Draw probe and its info panel (if probe exists)
+  if (probe) {
+    drawProbe();
+  }
 
   showPrompts(deltaTime);
 
   if (showFPSIsON) drawFPS(canvas.width, canvas.height, ctx);
+}
+
+/**
+ * Calculates just the gravitational field strength at a point (optimized for null point search)
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @returns {number} Field strength magnitude
+ */
+function getFieldStrengthAt(x, y) {
+  const G = 0.1;
+  const softening = 100;
+  let totalAx = 0;
+  let totalAy = 0;
+  
+  for (const body of celestialBodies) {
+    const dx = body.x - x;
+    const dy = body.y - y;
+    const distanceSquared = dx * dx + dy * dy;
+    const softenedDistance = Math.sqrt(distanceSquared + softening * softening);
+    
+    if (softenedDistance > 20) {
+      const acceleration = (G * body.weight) / (softenedDistance * softenedDistance);
+      totalAx += acceleration * (dx / softenedDistance);
+      totalAy += acceleration * (dy / softenedDistance);
+    }
+  }
+  
+  return Math.sqrt(totalAx * totalAx + totalAy * totalAy);
+}
+
+/**
+ * Finds the nearest gravitational null point (where field strength is minimal)
+ * Uses gradient descent with multiple starting points
+ * @param {number} startX - Starting X coordinate (probe position)
+ * @param {number} startY - Starting Y coordinate (probe position)
+ * @param {number} searchRadius - Maximum search radius
+ * @returns {Object|null} Null point data or null if not found
+ */
+function findNearestNullPoint(startX, startY, searchRadius = 500) {
+  if (celestialBodies.length < 2) {
+    // Need at least 2 bodies for a meaningful null point
+    return null;
+  }
+  
+  let bestPoint = null;
+  let bestStrength = Infinity;
+  
+  // Grid search to find candidate regions
+  const gridSize = 20;
+  const step = searchRadius / gridSize;
+  
+  for (let i = -gridSize; i <= gridSize; i++) {
+    for (let j = -gridSize; j <= gridSize; j++) {
+      const testX = startX + i * step;
+      const testY = startY + j * step;
+      const strength = getFieldStrengthAt(testX, testY);
+      
+      if (strength < bestStrength) {
+        bestStrength = strength;
+        bestPoint = { x: testX, y: testY };
+      }
+    }
+  }
+  
+  if (!bestPoint) return null;
+  
+  // Refine with gradient descent from best grid point
+  let currentX = bestPoint.x;
+  let currentY = bestPoint.y;
+  let currentStrength = bestStrength;
+  let stepSize = step / 2;
+  
+  for (let iteration = 0; iteration < 50; iteration++) {
+    // Check 8 directions plus current
+    const directions = [
+      [0, 0], [1, 0], [-1, 0], [0, 1], [0, -1],
+      [1, 1], [1, -1], [-1, 1], [-1, -1]
+    ];
+    
+    let improved = false;
+    for (const [dx, dy] of directions) {
+      const testX = currentX + dx * stepSize;
+      const testY = currentY + dy * stepSize;
+      const strength = getFieldStrengthAt(testX, testY);
+      
+      if (strength < currentStrength) {
+        currentStrength = strength;
+        currentX = testX;
+        currentY = testY;
+        improved = true;
+      }
+    }
+    
+    if (!improved) {
+      stepSize *= 0.5;
+      if (stepSize < 0.1) break;
+    }
+  }
+  
+  // Calculate distance from probe
+  const distanceFromProbe = Math.sqrt(
+    (currentX - startX) * (currentX - startX) + 
+    (currentY - startY) * (currentY - startY)
+  );
+  
+  // Determine stability classification
+  let stability = 'Unstable';
+  if (currentStrength < 0.0001) {
+    stability = 'Strong Null';
+  } else if (currentStrength < 0.001) {
+    stability = 'Weak Null';
+  } else if (currentStrength < 0.01) {
+    stability = 'Near Null';
+  } else {
+    stability = 'Local Minimum';
+  }
+  
+  return {
+    x: currentX,
+    y: currentY,
+    fieldStrength: currentStrength,
+    distanceFromProbe,
+    stability
+  };
+}
+
+/**
+ * Calculates gravitational data at a specific point in space
+ * @param {number} x - X coordinate of the point
+ * @param {number} y - Y coordinate of the point
+ * @returns {Object} Gravitational data at the point
+ */
+function calculateGravityAtPoint(x, y) {
+  const G = 0.1; // Same gravitational constant as in PhysicsSystem
+  const softening = 100; // Same softening parameter
+  
+  let totalAx = 0;
+  let totalAy = 0;
+  let totalPotential = 0;
+  let nearestBody = null;
+  let nearestDistance = Infinity;
+  let dominantBody = null;
+  let maxContribution = 0;
+  
+  for (const body of celestialBodies) {
+    const dx = body.x - x;
+    const dy = body.y - y;
+    const distanceSquared = dx * dx + dy * dy;
+    const distance = Math.sqrt(distanceSquared);
+    const softenedDistance = Math.sqrt(distanceSquared + softening * softening);
+    
+    // Track nearest body
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestBody = body;
+    }
+    
+    // Calculate gravitational acceleration contribution
+    if (softenedDistance > 20) { // Minimum distance check
+      const acceleration = (G * body.weight) / (softenedDistance * softenedDistance);
+      const ax = acceleration * (dx / softenedDistance);
+      const ay = acceleration * (dy / softenedDistance);
+      
+      totalAx += ax;
+      totalAy += ay;
+      
+      // Track dominant gravitational source
+      if (acceleration > maxContribution) {
+        maxContribution = acceleration;
+        dominantBody = body;
+      }
+    }
+    
+    // Calculate gravitational potential (negative, as convention)
+    if (distance > 1) {
+      totalPotential -= (G * body.weight) / distance;
+    }
+  }
+  
+  const accelerationMagnitude = Math.sqrt(totalAx * totalAx + totalAy * totalAy);
+  const accelerationAngle = Math.atan2(totalAy, totalAx);
+  
+  // Calculate escape velocity at this point (v = sqrt(2 * |potential|))
+  const escapeVelocity = Math.sqrt(2 * Math.abs(totalPotential));
+  
+  // Calculate orbital velocity for circular orbit at nearest body distance
+  let orbitalVelocity = 0;
+  if (nearestBody && nearestDistance > nearestBody.radius) {
+    orbitalVelocity = Math.sqrt(G * nearestBody.weight / nearestDistance);
+  }
+  
+  return {
+    ax: totalAx,
+    ay: totalAy,
+    accelerationMagnitude,
+    accelerationAngle,
+    potential: totalPotential,
+    nearestBody,
+    nearestDistance,
+    dominantBody,
+    escapeVelocity,
+    orbitalVelocity,
+    fieldStrength: accelerationMagnitude
+  };
+}
+
+/**
+ * Updates probe position during smooth transition
+ */
+function updateProbeTransition() {
+  if (probe && probe.isTransitioning) {
+    probe.transitionProgress += probeTransitionSpeed;
+    
+    if (probe.transitionProgress >= 1) {
+      // Reached current target
+      probe.transitionProgress = 1;
+      probe.x = probe.targetX;
+      probe.y = probe.targetY;
+      
+      // Check if there are more waypoints in the queue
+      if (probe.waypoints && probe.waypoints.length > 0) {
+        // Start transition to next waypoint
+        const nextWaypoint = probe.waypoints.shift();
+        probe.startX = probe.x;
+        probe.startY = probe.y;
+        probe.targetX = nextWaypoint.x;
+        probe.targetY = nextWaypoint.y;
+        probe.transitionProgress = 0;
+        // Keep isTransitioning = true
+      } else {
+        probe.isTransitioning = false;
+      }
+    } else {
+      // Smooth easing function (ease-in-out)
+      const t = probe.transitionProgress;
+      const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      
+      // Linear interpolation from start to target using eased progress
+      probe.x = probe.startX + (probe.targetX - probe.startX) * ease;
+      probe.y = probe.startY + (probe.targetY - probe.startY) * ease;
+    }
+  }
+}
+
+/**
+ * Draws the probe and its information panel
+ */
+function drawProbe() {
+  if (!probe) return;
+  
+  // Update probe transition
+  updateProbeTransition();
+  
+  // Calculate screen position
+  const screenX = (probe.x - camera.x) * zoomFactor + canvas.width / 2 * (1 - zoomFactor);
+  const screenY = (probe.y - camera.y) * zoomFactor + canvas.height / 2 * (1 - zoomFactor);
+  
+  // Find null point
+  let nullPoint = null;
+  if (celestialBodies.length >= 2) {
+    nullPoint = findNearestNullPoint(probe.x, probe.y);
+  }
+  
+  // Draw null point marker if found
+  if (nullPoint) {
+    const nullScreenX = (nullPoint.x - camera.x) * zoomFactor + canvas.width / 2 * (1 - zoomFactor);
+    const nullScreenY = (nullPoint.y - camera.y) * zoomFactor + canvas.height / 2 * (1 - zoomFactor);
+    
+    // Draw line connecting probe to null point
+    ctx.setLineDash([3, 6]);
+    ctx.strokeStyle = 'rgba(180, 100, 255, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(screenX, screenY);
+    ctx.lineTo(nullScreenX, nullScreenY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Draw null point marker (diamond shape)
+    const nullSize = 10;
+    ctx.strokeStyle = 'rgba(180, 100, 255, 0.9)';
+    ctx.fillStyle = 'rgba(180, 100, 255, 0.3)';
+    ctx.lineWidth = 2;
+    
+    ctx.beginPath();
+    ctx.moveTo(nullScreenX, nullScreenY - nullSize);
+    ctx.lineTo(nullScreenX + nullSize, nullScreenY);
+    ctx.lineTo(nullScreenX, nullScreenY + nullSize);
+    ctx.lineTo(nullScreenX - nullSize, nullScreenY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    
+    // Inner glow effect based on stability
+    let glowColor = 'rgba(255, 255, 255, 0.8)';
+    if (nullPoint.stability === 'Strong Null') {
+      glowColor = 'rgba(100, 255, 100, 1)';
+    } else if (nullPoint.stability === 'Weak Null') {
+      glowColor = 'rgba(200, 255, 100, 1)';
+    } else if (nullPoint.stability === 'Near Null') {
+      glowColor = 'rgba(255, 255, 100, 1)';
+    }
+    
+    ctx.fillStyle = glowColor;
+    ctx.beginPath();
+    ctx.arc(nullScreenX, nullScreenY, 3, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Label
+    ctx.font = '11px Arial';
+    ctx.fillStyle = 'rgba(180, 100, 255, 1)';
+    ctx.fillText('NULL', nullScreenX + nullSize + 4, nullScreenY + 4);
+  }
+  
+  // Draw probe marker (crosshair style)
+  const probeSize = 12;
+  ctx.strokeStyle = 'rgba(0, 255, 255, 0.9)';
+  ctx.lineWidth = 2;
+  
+  // Outer circle
+  ctx.beginPath();
+  ctx.arc(screenX, screenY, probeSize, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  // Inner crosshair
+  ctx.beginPath();
+  ctx.moveTo(screenX - probeSize - 5, screenY);
+  ctx.lineTo(screenX - probeSize / 2, screenY);
+  ctx.moveTo(screenX + probeSize / 2, screenY);
+  ctx.lineTo(screenX + probeSize + 5, screenY);
+  ctx.moveTo(screenX, screenY - probeSize - 5);
+  ctx.lineTo(screenX, screenY - probeSize / 2);
+  ctx.moveTo(screenX, screenY + probeSize / 2);
+  ctx.lineTo(screenX, screenY + probeSize + 5);
+  ctx.stroke();
+  
+  // Inner dot
+  ctx.fillStyle = 'rgba(0, 255, 255, 1)';
+  ctx.beginPath();
+  ctx.arc(screenX, screenY, 3, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Draw transition line and queued waypoints if transitioning
+  if (probe.isTransitioning || (probe.waypoints && probe.waypoints.length > 0)) {
+    let lastX = screenX;
+    let lastY = screenY;
+    
+    // Draw line to current target
+    if (probe.isTransitioning) {
+      const targetScreenX = (probe.targetX - camera.x) * zoomFactor + canvas.width / 2 * (1 - zoomFactor);
+      const targetScreenY = (probe.targetY - camera.y) * zoomFactor + canvas.height / 2 * (1 - zoomFactor);
+      
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.5)';
+      ctx.beginPath();
+      ctx.moveTo(screenX, screenY);
+      ctx.lineTo(targetScreenX, targetScreenY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      // Draw target marker
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.5)';
+      ctx.beginPath();
+      ctx.arc(targetScreenX, targetScreenY, probeSize / 2, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      lastX = targetScreenX;
+      lastY = targetScreenY;
+    }
+    
+    // Draw queued waypoints
+    if (probe.waypoints && probe.waypoints.length > 0) {
+      probe.waypoints.forEach((waypoint, index) => {
+        const wpScreenX = (waypoint.x - camera.x) * zoomFactor + canvas.width / 2 * (1 - zoomFactor);
+        const wpScreenY = (waypoint.y - camera.y) * zoomFactor + canvas.height / 2 * (1 - zoomFactor);
+        
+        // Draw connecting line (more faded for later waypoints)
+        const alpha = Math.max(0.2, 0.5 - index * 0.1);
+        ctx.setLineDash([3, 6]);
+        ctx.strokeStyle = `rgba(0, 200, 255, ${alpha})`;
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(wpScreenX, wpScreenY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Draw waypoint marker (smaller circles with numbers)
+        ctx.strokeStyle = `rgba(0, 200, 255, ${alpha + 0.2})`;
+        ctx.fillStyle = `rgba(0, 50, 60, 0.7)`;
+        ctx.beginPath();
+        ctx.arc(wpScreenX, wpScreenY, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        
+        // Draw waypoint number
+        ctx.fillStyle = `rgba(0, 255, 255, ${alpha + 0.3})`;
+        ctx.font = '10px Arial';
+        ctx.fillText(`${index + 1}`, wpScreenX - 3, wpScreenY + 3);
+        
+        lastX = wpScreenX;
+        lastY = wpScreenY;
+      });
+    }
+  }
+  
+  // Calculate and draw gravity data if there are celestial bodies
+  if (celestialBodies.length > 0) {
+    const gravityData = calculateGravityAtPoint(probe.x, probe.y);
+    drawProbeInfoPanel(gravityData, nullPoint);
+    
+    // Draw gravity vector arrow at probe position
+    if (gravityData.accelerationMagnitude > 0.0001) {
+      const arrowLength = Math.min(50, gravityData.accelerationMagnitude * 500);
+      const endX = screenX + Math.cos(gravityData.accelerationAngle) * arrowLength;
+      const endY = screenY + Math.sin(gravityData.accelerationAngle) * arrowLength;
+      
+      // Arrow shaft
+      ctx.strokeStyle = 'rgba(255, 100, 50, 0.9)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(screenX, screenY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+      
+      // Arrow head
+      const headSize = 8;
+      const angle = gravityData.accelerationAngle;
+      ctx.fillStyle = 'rgba(255, 100, 50, 0.9)';
+      ctx.beginPath();
+      ctx.moveTo(endX, endY);
+      ctx.lineTo(
+        endX - headSize * Math.cos(angle - Math.PI / 6),
+        endY - headSize * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.lineTo(
+        endX - headSize * Math.cos(angle + Math.PI / 6),
+        endY - headSize * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.closePath();
+      ctx.fill();
+    }
+  } else {
+    // Draw minimal info panel when no bodies exist
+    drawProbeInfoPanel(null, null);
+  }
+}
+
+/**
+ * Draws the probe information panel
+ * @param {Object|null} gravityData - Gravitational data at probe position
+ * @param {Object|null} nullPoint - Nearest null point data
+ */
+function drawProbeInfoPanel(gravityData, nullPoint) {
+  const padding = 15;
+  const lineHeight = 18;
+  const panelWidth = 250;
+  const startX = canvas.width - panelWidth - padding;
+  
+  // Build info lines
+  const infoLines = [
+    `Position: (${probe.x.toFixed(1)}, ${probe.y.toFixed(1)})`
+  ];
+  
+  if (gravityData) {
+    infoLines.push(`Field Strength: ${gravityData.fieldStrength.toFixed(6)}`);
+    infoLines.push(`Grav. Potential: ${gravityData.potential.toFixed(4)}`);
+    infoLines.push(`Escape Velocity: ${(gravityData.escapeVelocity * (velocityUnit === 'm/s' ? 1000 : 1)).toFixed(2)} ${velocityUnit}`);
+    
+    if (gravityData.nearestBody) {
+      infoLines.push(`Closest Source: ${gravityData.nearestBody.label}`);
+      infoLines.push(`Distance: ${gravityData.nearestDistance.toFixed(2)}`);
+      infoLines.push(`Orbital Vel: ${(gravityData.orbitalVelocity * (velocityUnit === 'm/s' ? 1000 : 1)).toFixed(2)} ${velocityUnit}`);
+    }
+    
+    if (gravityData.dominantBody) {
+      if (gravityData.dominantBody !== gravityData.nearestBody) {
+        infoLines.push(`Dominant Source: ${gravityData.dominantBody.label}`);
+      } else {
+        infoLines.push(`Dominant Source: (same as closest)`);
+      }
+    }
+    
+    // Direction in degrees
+    const directionDeg = (gravityData.accelerationAngle * 180 / Math.PI + 360) % 360;
+    infoLines.push(`Pull Direction: ${directionDeg.toFixed(1)}°`);
+  } else {
+    infoLines.push('No bodies in simulation');
+  }
+  
+  // Add null point info
+  if (nullPoint) {
+    infoLines.push('--- Null Point ---');
+    infoLines.push(`Status: ${nullPoint.stability}`);
+    infoLines.push(`Distance: ${nullPoint.distanceFromProbe.toFixed(1)}`);
+    infoLines.push(`Field: ${nullPoint.fieldStrength.toExponential(2)}`);
+  } else if (celestialBodies.length >= 2) {
+    infoLines.push('--- Null Point ---');
+    infoLines.push('Searching...');
+  } else if (celestialBodies.length > 0) {
+    infoLines.push('--- Null Point ---');
+    infoLines.push('Need 2+ bodies');
+  }
+  
+  if (probe.isTransitioning) {
+    const waypointCount = probe.waypoints ? probe.waypoints.length : 0;
+    if (waypointCount > 0) {
+      infoLines.push(`Transitioning: ${(probe.transitionProgress * 100).toFixed(0)}% (+${waypointCount} queued)`);
+    } else {
+      infoLines.push(`Transitioning: ${(probe.transitionProgress * 100).toFixed(0)}%`);
+    }
+  }
+  
+  const panelHeight = (infoLines.length + 1.5) * lineHeight + padding * 2;
+  const startY = canvas.height - panelHeight - padding;
+  
+  // Draw semi-transparent background
+  ctx.fillStyle = 'rgba(0, 30, 40, 0.85)';
+  ctx.fillRect(startX - padding, startY - padding, panelWidth, panelHeight);
+  
+  // Draw border
+  ctx.strokeStyle = 'rgba(0, 255, 255, 0.7)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(startX - padding, startY - padding, panelWidth, panelHeight);
+  
+  // Draw title
+  ctx.fillStyle = 'rgba(0, 255, 255, 1)';
+  ctx.font = 'bold 15px Arial';
+  ctx.fillText('Space Probe', startX, startY);
+  
+  // Draw info lines
+  ctx.font = '13px Arial';
+  
+  infoLines.forEach((line, index) => {
+    const y = startY + (index + 1.5) * lineHeight;
+    
+    // Color coding for different properties
+    if (line.startsWith('Field Strength:') || line.startsWith('Field:')) {
+      ctx.fillStyle = 'rgba(255, 150, 50, 1)';
+    } else if (line.startsWith('Grav. Potential:')) {
+      ctx.fillStyle = 'rgba(150, 100, 255, 1)';
+    } else if (line.startsWith('Escape Velocity:') || line.startsWith('Orbital Vel:')) {
+      ctx.fillStyle = 'rgba(0, 255, 200, 1)';
+    } else if (line.startsWith('Closest Source:') || line.startsWith('Dominant Source:')) {
+      ctx.fillStyle = 'rgba(255, 255, 100, 1)';
+    } else if (line.startsWith('Pull Direction:')) {
+      ctx.fillStyle = 'rgba(255, 100, 100, 1)';
+    } else if (line.startsWith('Transitioning:')) {
+      ctx.fillStyle = 'rgba(100, 200, 255, 1)';
+    } else if (line.startsWith('---')) {
+      ctx.fillStyle = 'rgba(180, 100, 255, 0.8)';
+    } else if (line.startsWith('Status:')) {
+      // Color based on null point stability
+      if (line.includes('Strong')) {
+        ctx.fillStyle = 'rgba(100, 255, 100, 1)';
+      } else if (line.includes('Weak')) {
+        ctx.fillStyle = 'rgba(200, 255, 100, 1)';
+      } else if (line.includes('Near')) {
+        ctx.fillStyle = 'rgba(255, 255, 100, 1)';
+      } else {
+        ctx.fillStyle = 'rgba(255, 180, 100, 1)';
+      }
+    } else if (line.startsWith('Distance:') && infoLines[index - 1]?.startsWith('Status:')) {
+      ctx.fillStyle = 'rgba(180, 100, 255, 1)';
+    } else if (line === 'Need 2+ bodies' || line === 'Searching...') {
+      ctx.fillStyle = 'rgba(150, 150, 150, 1)';
+    } else {
+      ctx.fillStyle = 'rgba(200, 200, 200, 1)';
+    }
+    
+    ctx.fillText(line, startX, y);
+  });
 }
 
 /**
@@ -1096,6 +1740,10 @@ function resetEverything() {
   showBHNodesIsON = showBHNodes.checked = false;
   showBHCenterOfMassIsON = showBHCenterOfMass.checked = false;
   showTrailPointsIsON = showTrailPoints.checked = false;
+  
+  // Reset probe mode
+  probeModeEnabled = false;
+  probe = null;
 
   // Reset gravity field visualization settings
   showGravityGridIsON = showGravityGrid.checked = false;
@@ -1164,6 +1812,13 @@ function playInstructions() {
 
   prompt({
     text: "Press P to pin/unpin followed body, Space to pause",
+    y: canvas.height - 50,
+    vel: 140,
+    time: 0.2
+  });
+
+  prompt({
+    text: "Press 0 for Probe Mode - analyze any point in space",
     y: canvas.height - 50,
     vel: 140,
     time: 0.2
